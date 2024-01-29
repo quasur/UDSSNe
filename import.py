@@ -32,8 +32,8 @@ kdata[:,:,0]=Kx
 
 #save data as 2d array
 np.savetxt("data/jdata.npy",jdata.reshape(jdata.shape[0],-1))
-np.savetxt("data/kdata.npy",kdata.reshape(jdata.shape[0],-1))
+np.savetxt("data/kdata.npy",kdata.reshape(kdata.shape[0],-1))
 
 #Use these lines to import jdata and kdata in other scripts:
-#np.loadtxt("data/kdata.np").reshape((114243,38,3))
-#np.loadtxt("data/jdata.np").reshape((114243,35,3))
+#np.loadtxt("data/kdata.npy").reshape((114243,38,3))
+#np.loadtxt("data/jdata.npy").reshape((114243,35,3))
