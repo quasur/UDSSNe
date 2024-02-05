@@ -18,11 +18,11 @@ for i in range(kdat[:,0,0].size):
 
 """
 
-chisq = chisquare(kydat[:,:,1],axis=1)[0]
+chisq = chisquare(kdat[:,:,1],axis=1)[0]
 
 #%%
 import matplotlib.pyplot as plt
-plt.hist(np.log(chisq),bins=1000)
+plt.hist((chisq))
 plt.show()
 plt.plot(chisq)
 plt.show()
@@ -30,7 +30,7 @@ plt.show()
 std = np.std(chisq)
 mean = np.mean(chisq)
 
-big = np.where(np.logical_and(chisq>100*std+mean,True))#,chisq<10000000*std+mean))
+big = np.where(np.logical_and(chisq>10*std+mean,True))#,chisq<10000000*std+mean))
 kdatbig = kdat[big]
 kydatbig=kydat[big]
 chisqlst = chisq[big]

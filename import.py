@@ -20,7 +20,7 @@ for j in range(38):
 for j in range(35):
     i=j+38
     jdata[:,j,1] = messdata[:,i*2+3]
-    jdata[:,j,2] = messdata[:,i*2+3]
+    jdata[:,j,2] = messdata[:,i*2+4]
 
 #import observation time
 Jx = np.loadtxt("data/J_band_x-axis.txt")
