@@ -25,10 +25,10 @@ def generate_template(template_path, z, peak_semester):
 
 
 def generate_time_series(template, z, peak_semester):
-    k_x = np.loadtxt("..\\Month x-axes\\K_band_x-axis.txt")
-    j_x = np.loadtxt("..\\Month x-axes\\J_band_x-axis.txt")
+    k_x = np.loadtxt("..\\data\\K_band_x-axis.txt")
+    j_x = np.loadtxt("..\\data\\J_band_x-axis.txt")
 
-    flux_file = "..\\Light Curves\\month_lightcurves_J_and_K.fits"
+    flux_file = "..\\data\\month_lightcurves_J_and_K.fits"
     flux_data = fits.open(flux_file)
     flux_fits_data = np.array(flux_data[1].data)
 
