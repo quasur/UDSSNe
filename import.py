@@ -77,3 +77,7 @@ np.savetxt("data/kydata.npy",kdata.reshape(kdata.shape[0],-1))
 
 #np.loadtxt("data/kdata.npy").reshape((114243,7,3))
 #np.loadtxt("data/jdata.npy").reshape((114243,8,3))
+
+#%%LUT
+
+np.savetxt("data/LUT.npy",messdata[:,0:3])
