@@ -28,11 +28,7 @@ def generate_time_series(template, z, peak_semester):
     k_x = np.loadtxt("..\\data\\K_band_x-axis.txt")
     j_x = np.loadtxt("..\\data\\J_band_x-axis.txt")
 
-    flux_file = "..\\data\\month_lightcurves_J_and_K.fits"
-    flux_data = fits.open(flux_file)
-    flux_fits_data = np.array(flux_data[1].data)
-
-    flux_arr = np.asarray(flux_fits_data.tolist())
+    flux_arr = np.loadtxt("background_flux_library.txt")
     background_index = np.random.randint(30)
 
     k_y = flux_arr[background_index][3:3 + (k_x.size * 2):2]
