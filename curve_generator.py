@@ -25,8 +25,8 @@ def generate_template(template_path, z, peak_semester):
 
 
 def generate_time_series(template, z, peak_semester):
-    k_x = np.loadtxt("..\\data\\K_band_x-axis.txt")
-    j_x = np.loadtxt("..\\data\\J_band_x-axis.txt")
+    k_x = np.loadtxt("data/K_band_x-axis.txt")
+    j_x = np.loadtxt("data/J_band_x-axis.txt")
 
     flux_arr = np.loadtxt("background_flux_library.txt")
     background_index = np.random.randint(30)
