@@ -21,7 +21,6 @@ for i in range(kdat[:,0,0].size):
 chisq = chisquare(kydat[:,:,1],axis=1)[0]
 
 #%%
-
 #welch stetson test
 def delta(data,error):
     mean = np.mean(data)
@@ -38,8 +37,10 @@ for j in range(nudge+3):
             wst[i]=new
 
 #%%
-    
-plt.plot(np.log(wst))
+plt.cla()
+plt.hist(np.log(wst),bins=1000,color="blue",alpha=0.7)
+plt.hist(np.log(chisq),bins=1000,color="red",alpha=0.7)
+plt.show()
 
 #%%
 
@@ -72,3 +73,43 @@ for i in range(kdatbig[:,0,0].size):
     plt.show()
 lut = np.loadtxt("data/LUT.npy")
 ids = lut[big]
+
+#%%
+
+kzero = np.any(kdat[:,:,1]==0,axis=1)
+jzero = np.any(jdat[:,:,1]==0,axis=1)
+
+posk=lut[kzero,:]
+posj=lut[jzero,:]
+
+
+def setMask(array): #Funcion to remove values outside of the range specified
+    array= array.T
+    xmin,ymin = 34.2,-5.4
+    xmax,ymax = 34.8,-4.8
+    mask = np.logical_or(array[:,0]<xmin,array[:,0]>xmax)
+    mask |= np.logical_or(array[:,1]<ymin,array[:,1]>ymax)
+    retarray = array[~mask]
+    return retarray.T
+
+xmin,ymin = 34.2,-5.4
+xmax,ymax = 34.8,-4.8
+
+kcoremask = np.logical_or(posk[:,1]<xmin,posk[:,1]>xmax)
+kcoremask |= np.logical_or(posk[:,2]<ymin,posk[:,2]>ymax)
+
+jcoremask = np.logical_or(posj[:,1]<xmin,posj[:,1]>xmax)
+jcoremask |= np.logical_or(posj[:,2]<ymin,posj[:,2]>ymax)
+
+
+
+corek=posk[~kcoremask]
+corej=posj[~jcoremask]
+
+plt.figure(dpi=120)
+plt.plot(lut[:,1],lut[:,2],'b,')
+plt.plot(posk[:,1],posk[:,2],'r.')
+plt.plot(posj[:,1],posj[:,2],'r.')
+plt.plot(corek[:,1],corek[:,2],'g.')
+plt.plot(corej[:,1],corej[:,2],'g.')
+plt.show()
