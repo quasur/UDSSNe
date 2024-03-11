@@ -38,7 +38,7 @@ np.savetxt("data/kdata.npy",kdata.reshape(kdata.shape[0],-1))
 #np.loadtxt("data/kdata.npy").reshape((114243,38,3))
 #np.loadtxt("data/jdata.npy").reshape((114243,35,3))
 
-#%% semersterly data
+#%% yearly data
 #%%
 from astropy.io import fits
 from astropy.table import table

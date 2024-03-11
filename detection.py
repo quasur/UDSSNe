@@ -39,6 +39,47 @@ for j in range(nudge+3):
         if new > wst[i] or wst[i]==0:
             wst[i]=new
 
+#%%
+#Varability imbalance detection
+
+kmean = np.expand_dims(np.mean(kdat[:,:,1],axis=1),axis=-1)
+jmean = np.expand_dims(np.mean(jdat[:,:,1],axis=1),axis=-1)
+
+kUpOrDown = (kdat[:,:,1] > kmean) #create a masking array to apply to the original data to seperate into >mean and <mean
+jUpOrDown = (jdat[:,:,1] > jmean)
+
+print(np.sum(kUpOrDown)/np.size(kdat))
+#this is a really stupid way of doing it but its funciton and doesnt work so I cba to change it
+kdist = np.zeros(114243)
+jdist = np.zeros(114243)
+for i in range(114243):
+    kup   = kdat[i,kUpOrDown[i,:],1]
+    jup   = jdat[i,jUpOrDown[i,:],1]
+    kdown = kdat[i,~kUpOrDown[i,:],1]
+    jdown = jdat[i,~jUpOrDown[i,:],1]
+
+    kuperr   = kdat[i,kUpOrDown[i,:],2]
+    juperr   = jdat[i,jUpOrDown[i,:],2]
+    kdownerr = kdat[i,~kUpOrDown[i,:],2]
+    jdownerr = jdat[i,~jUpOrDown[i,:],2]
+
+    kdist[i] = kdist[i] + (np.sum((kmean[i]-kup)/kuperr) + np.sum((kmean[i]-kdown)/kdownerr))/1#kmean[i]
+    jdist[i] = jdist[i] + (np.sum((jmean[i]-jup)/juperr) + np.sum((jmean[i]-jdown)/jdownerr))/1#jmean[i]
+
+#%%
+import matplotlib.pyplot as plt
+
+plt.hist(np.log(kdist),bins=1000,alpha=0.6)
+plt.hist(np.log(jdist),bins=1000,alpha=0.6)
+#%%
+for i in range(114243):
+    if kdist[i]>10:
+        plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
+        plt.errorbar(kdat[i,:,0],kdat[i,:,1],yerr=kdat[i,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
+        print(i,kdist[i])
+        plt.show()
+
+
 
 #%%
 #peak value dector
@@ -61,7 +102,6 @@ jpeakObjs = jdat[peaksBool]
 kypeakObjs = kyinterp[peaksBool]
 jypeakObjs = jyinterp[peaksBool]
 
-#%%
 import matplotlib.pyplot as plt
 for id in range(np.size(kpeakObjs[:,0,0])):
     plt.plot(kpeakObjs[id,:,0],kypeakObjs[id,:],'r-')
