@@ -10,6 +10,9 @@ jdat = np.loadtxt("data/jdata.npy").reshape((114243,35,3))
 kydat = np.loadtxt("data/kydata.npy").reshape((114243,7,3))
 jydat = np.loadtxt("data/jydata.npy").reshape((114243,8,3))
 
+kydat[:,:,0]=(kydat[:,:,0]-2005)*12
+jydat[:,:,0]=(jydat[:,:,0]-2005)*12
+
 """
 chisq=np.zeros((kdat[:,0,1].size))
 for i in range(kdat[:,0,0].size):
@@ -35,6 +38,39 @@ for j in range(nudge+3):
         new = np.sqrt(1/(35*34))*np.sum(kdelta*jdelta)
         if new > wst[i] or wst[i]==0:
             wst[i]=new
+
+
+#%%
+#peak value dector
+kyinterp = np.expand_dims(np.mean(kdat[:,:,1],axis=1), axis=-1)*np.ones((114243,38))
+jyinterp = np.expand_dims(np.mean(jdat[:,:,1],axis=1),axis=-1)*np.ones((114243,35))
+"""
+for i in range(114243):
+    kyinterp[i,:,1] = np.interp(kdat[i,:,0],kydat[i,:,0],kydat[i,:,1])
+    jyinterp[i,:,1] = np.interp(jdat[i,:,0],jydat[i,:,0],jydat[i,:,1])
+"""
+    
+stdvs = 4
+kpeakBool = np.any((kdat[:,:,1]-kyinterp)>kdat[:,:,2]*stdvs,axis=1)
+jpeakBool = np.any((jdat[:,:,1]-jyinterp)>jdat[:,:,2]*stdvs,axis=1)
+
+peaksBool = np.logical_or(kpeakBool,jpeakBool)
+
+kpeakObjs = kdat[peaksBool]
+jpeakObjs = jdat[peaksBool]
+kypeakObjs = kyinterp[peaksBool]
+jypeakObjs = jyinterp[peaksBool]
+
+#%%
+import matplotlib.pyplot as plt
+for id in range(np.size(kpeakObjs[:,0,0])):
+    plt.plot(kpeakObjs[id,:,0],kypeakObjs[id,:],'r-')
+    plt.errorbar(kpeakObjs[id,:,0],kpeakObjs[id,:,1],yerr=kpeakObjs[id,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
+    
+    plt.plot(jpeakObjs[id,:,0],jypeakObjs[id,:],'r-')
+    plt.errorbar(jpeakObjs[id,:,0],jpeakObjs[id,:,1],yerr=jpeakObjs[id,:,2],color="green",marker="x",lw=0,elinewidth=1,capsize=1.5)
+    
+    plt.show()
 
 #%%
 plt.cla()
