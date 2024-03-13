@@ -10,6 +10,8 @@ jdat = np.loadtxt("data/jdata.npy").reshape((114243,35,3))
 kydat = np.loadtxt("data/kydata.npy").reshape((114243,7,3))
 jydat = np.loadtxt("data/jydata.npy").reshape((114243,8,3))
 
+lut = np.loadtxt("data/LUT.npy")
+
 kydat[:,:,0]=(kydat[:,:,0]-2005)*12
 jydat[:,:,0]=(jydat[:,:,0]-2005)*12
 
@@ -71,7 +73,8 @@ import matplotlib.pyplot as plt
 
 plt.hist(np.log(kdist),bins=1000,alpha=0.6)
 plt.hist(np.log(jdist),bins=1000,alpha=0.6)
-#%%
+plt.show()
+
 for i in range(114243):
     if kdist[i]>10:
         plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
@@ -82,35 +85,50 @@ for i in range(114243):
 
 
 #%%
-#peak value dector
-kyinterp = np.expand_dims(np.mean(kdat[:,:,1],axis=1), axis=-1)*np.ones((114243,38))
-jyinterp = np.expand_dims(np.mean(jdat[:,:,1],axis=1),axis=-1)*np.ones((114243,35))
-"""
+#peak value dector combined with wst to return variable objects with single peaks
+import matplotlib.pyplot as plt
+
+kmean = np.expand_dims(np.mean(kdat[:,:,1],axis=1),axis=-1)
+jmean = np.expand_dims(np.mean(jdat[:,:,1],axis=1),axis=-1)
+
+kdiffnum = np.sum(((kydat[:,:,1]-kmean)/kydat[:,:,2])>3,axis=1)
+jdiffnum = np.sum(((jydat[:,:,1]-jmean)/jydat[:,:,2])>3,axis=1)
+
+objType = np.zeros(114243)
+kType = np.zeros(114243)
+jType = np.zeros(114243)
+j=[0,0]
 for i in range(114243):
-    kyinterp[i,:,1] = np.interp(kdat[i,:,0],kydat[i,:,0],kydat[i,:,1])
-    jyinterp[i,:,1] = np.interp(jdat[i,:,0],jydat[i,:,0],jydat[i,:,1])
+    if kdiffnum[i] == jdiffnum[i] and wst[i]>0.5:
+        if kdiffnum[i] == 1:
+            objType[i] = 1
+            plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
+            plt.errorbar(kdat[i,:,0],kdat[i,:,1],yerr=kdat[i,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
+            plt.plot(jydat[i,:,0],jydat[i,:,1],'r-')
+            plt.errorbar(jdat[i,:,0],jdat[i,:,1],yerr=jdat[i,:,2],color="green",marker="x",lw=0,elinewidth=1,capsize=1.5)
+            plt.show()
+            print(i)
+            print(lut[i,0])
+            j[0]+=1
+        elif kdiffnum[i] > 1:
+            objType[i] = 2
+            j[1]+=1
+
+print("total:",np.sum(wst>0.5),"SN:",np.sum(objType==1),"AGN:",np.sum(objType==2))
+print(j)
+
 """
-    
-stdvs = 4
-kpeakBool = np.any((kdat[:,:,1]-kyinterp)>kdat[:,:,2]*stdvs,axis=1)
-jpeakBool = np.any((jdat[:,:,1]-jyinterp)>jdat[:,:,2]*stdvs,axis=1)
-
-peaksBool = np.logical_or(kpeakBool,jpeakBool)
-
-kpeakObjs = kdat[peaksBool]
-jpeakObjs = jdat[peaksBool]
-kypeakObjs = kyinterp[peaksBool]
-jypeakObjs = jyinterp[peaksBool]
-
 import matplotlib.pyplot as plt
 for id in range(np.size(kpeakObjs[:,0,0])):
-    plt.plot(kpeakObjs[id,:,0],kypeakObjs[id,:],'r-')
-    plt.errorbar(kpeakObjs[id,:,0],kpeakObjs[id,:,1],yerr=kpeakObjs[id,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
-    
-    plt.plot(jpeakObjs[id,:,0],jypeakObjs[id,:],'r-')
-    plt.errorbar(jpeakObjs[id,:,0],jpeakObjs[id,:,1],yerr=jpeakObjs[id,:,2],color="green",marker="x",lw=0,elinewidth=1,capsize=1.5)
-    
+   
     plt.show()
+"""
+#%%
+i=66612
+plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
+plt.errorbar(kdat[i,:,0],kdat[i,:,1],yerr=kdat[i,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
+plt.plot(jydat[i,:,0],jydat[i,:,1],'r-')
+plt.errorbar(jdat[i,:,0],jdat[i,:,1],yerr=jdat[i,:,2],color="green",marker="x",lw=0,elinewidth=1,capsize=1.5)
 
 #%%
 plt.cla()
