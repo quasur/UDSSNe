@@ -1,6 +1,7 @@
 #%%
 import numpy as np
 from scipy.stats import chisquare
+import matplotlib.pyplot as plt
 #import dataset
 
 kdat = np.loadtxt("data/kdata.npy").reshape((114243,38,3))
@@ -8,38 +9,31 @@ jdat = np.loadtxt("data/jdata.npy").reshape((114243,35,3))
 
 
 kydat = np.loadtxt("data/kydata.npy").reshape((114243,7,3))
-jydat = np.loadtxt("data/jydata.npy").reshape((114243,8,3))
+jydat = np.delete(np.loadtxt("data/jydata.npy").reshape((114243,8,3)),(1),axis=1)
 
 lut = np.loadtxt("data/LUT.npy")
-
+#convert years to months
 kydat[:,:,0]=(kydat[:,:,0]-2005)*12
 jydat[:,:,0]=(jydat[:,:,0]-2005)*12
 
-"""
-chisq=np.zeros((kdat[:,0,1].size))
-for i in range(kdat[:,0,0].size):
-    expval = np.mean(kdat[i,:,1])
-    chisq[i] = np.sum((kdat[i,:,1]-expval)**2/expval)
 
-"""
+#%%
+def lightcurve(id):
+    fig,ax = plt.subplots(2)
+    fig.tight_layout()
+    ax[0].plot(kydat[id,:,0],kydat[id,:,1],'b-')
+    ax[0].errorbar(kdat[id,:,0],kdat[id,:,1],yerr=kdat[id,:,2],color="red",marker="x",lw=0,elinewidth=1,capsize=1.5)
+    ax[1].plot(jydat[id,:,0],jydat[id,:,1],'b-')
+    ax[1].errorbar(jdat[id,:,0],jdat[id,:,1],yerr=jdat[id,:,2],color="red",marker="x",lw=0,elinewidth=1,capsize=1.5)
+    ax[0].set(ylabel="K")
+    ax[1].set(ylabel="J")
+    ax[1].set(xlabel="months")
+    fig.suptitle(str(("DR11= " , int(lut[id,0]))))
+  
+#%%
 
 chisq = chisquare(kydat[:,:,1],axis=1)[0]
 
-#%%
-#welch stetson test
-def delta(data,error):
-    mean = np.mean(data)
-    return (mean - data)/error
-
-wst = np.zeros(np.size(kdat[:,0,0])) 
-nudge = 0
-for j in range(nudge+3):
-    for i in range(np.size(kdat[:,0,0])):
-        kdelta = delta(kdat[i,j:j+35-nudge,1],kdat[i,j:j+35-nudge,2])
-        jdelta = delta(jdat[i,0:35-nudge,1]  ,jdat[i,0:35-nudge,2])
-        new = np.sqrt(1/(35*34))*np.sum(kdelta*jdelta)
-        if new > wst[i] or wst[i]==0:
-            wst[i]=new
 
 #%%
 #Varability imbalance detection
@@ -86,36 +80,86 @@ for i in range(114243):
 
 #%%
 #peak value dector combined with wst to return variable objects with single peaks
-import matplotlib.pyplot as plt
+#%%
+#parameters:
+peaklimit = 1
+wstLimit = 2
+devLimit = 6
+
+#welch stetson test
+def delta(data,error):
+    mean = np.mean(data)
+    return (mean - data)/error
+"""#monthy wst
+wst = np.zeros(np.size(kdat[:,0,0])) 
+nudge = 0
+for j in range(nudge+3):
+    for i in range(np.size(kdat[:,0,0])):
+        kdelta = delta(kdat[i,j:j+35-nudge,1],kdat[i,j:j+35-nudge,2])
+        jdelta = delta(jdat[i,0:35-nudge,1]  ,jdat[i,0:35-nudge,2])
+        new = np.sqrt(1/(35*34))*np.sum(kdelta*jdelta)
+        if new > wst[i] or wst[i]==0:
+            wst[i]=new
+"""
+wst = np.zeros(np.size(kydat[:,0,0])) 
+for i in range(np.size(kydat[:,0,0])):
+    kdelta = delta(kydat[i,:,1],kydat[i,:,2])
+    jdelta = delta(jydat[i,:,1],jydat[i,:,2])
+    new = np.sqrt(1/(7*6))*np.sum(kdelta*jdelta)
+    if new > wst[i] or wst[i]==0:
+        wst[i]=new
 
 kmean = np.expand_dims(np.mean(kdat[:,:,1],axis=1),axis=-1)
 jmean = np.expand_dims(np.mean(jdat[:,:,1],axis=1),axis=-1)
 
-kdiffnum = np.sum(((kydat[:,:,1]-kmean)/kydat[:,:,2])>3,axis=1)
-jdiffnum = np.sum(((jydat[:,:,1]-jmean)/jydat[:,:,2])>3,axis=1)
+kdiffnum = ((kydat[:,:,1]-kmean)/kydat[:,:,2])>devLimit
+jdiffnum = ((jydat[:,:,1]-jmean)/jydat[:,:,2])>devLimit
 
 objType = np.zeros(114243)
 kType = np.zeros(114243)
 jType = np.zeros(114243)
-j=[0,0]
+
+#create padded array
+kdiffpad = np.zeros((114243,9))
+jdiffpad = np.zeros((114243,9))
+
+kdiffpad[:,1:-1]=kdiffnum
+jdiffpad[:,1:-1]=jdiffnum
+ 
+counts=[0,0]#sn/agn count
+
 for i in range(114243):
-    if kdiffnum[i] == jdiffnum[i] and wst[i]>0.5:
-        if kdiffnum[i] == 1:
-            objType[i] = 1
-            plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
-            plt.errorbar(kdat[i,:,0],kdat[i,:,1],yerr=kdat[i,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
-            plt.plot(jydat[i,:,0],jydat[i,:,1],'r-')
-            plt.errorbar(jdat[i,:,0],jdat[i,:,1],yerr=jdat[i,:,2],color="green",marker="x",lw=0,elinewidth=1,capsize=1.5)
-            plt.show()
-            print(i)
-            print(lut[i,0])
-            j[0]+=1
-        elif kdiffnum[i] > 1:
-            objType[i] = 2
-            j[1]+=1
+    #if object is variable
+    if wst[i]>wstLimit:         
+            
+            #test each point to:
+            j=0
+            while j < 7:
+
+                k= j+1 #agn test. If many peaks together or more than n peaks per curve
+                if np.sum(kdiffpad[i,k-1:k+1])>1 or np.sum(jdiffpad[i,k-1:k+1])>1 or np.sum(kdiffnum[i,:])>peaklimit or np.sum(jdiffnum[i,:]>peaklimit):
+                    #classify as an agn
+                    objType[i] = 2
+                    #add 1 to agn count
+                    counts[1]+=1
+                    j=10 #end loop
+
+                #SN band coincidence test
+                elif kdiffnum[i,j] == jdiffnum[i,j] and kdiffnum[i,j] > 0:
+                    objType[i] = 1
+                    lightcurve(i)
+                    plt.show()
+                    #print(kdiffnum[i,:])
+                    #print(jdiffnum[i,:])
+                    #print(kcoincidence[i],jcoincidence[i])
+                    print(i)
+                    counts[0]+=1
+                    j = 10  #end loop
+                j+=1
+
+
 
 print("total:",np.sum(wst>0.5),"SN:",np.sum(objType==1),"AGN:",np.sum(objType==2))
-print(j)
 
 """
 import matplotlib.pyplot as plt
@@ -123,6 +167,15 @@ for id in range(np.size(kpeakObjs[:,0,0])):
    
     plt.show()
 """
+#%%
+i = 95788
+lightcurve(i)
+print(kdiffnum[i],jdiffnum[i])
+print(objType[i])
+print(lut[i,0])
+
+plt.show()
+
 #%%
 i=66612
 plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
@@ -207,3 +260,4 @@ plt.plot(posj[:,1],posj[:,2],'r.')
 plt.plot(corek[:,1],corek[:,2],'g.')
 plt.plot(corej[:,1],corej[:,2],'g.')
 plt.show()
+#%%
