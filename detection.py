@@ -17,17 +17,18 @@ kydat[:,:,0]=(kydat[:,:,0]-2005)*12
 jydat[:,:,0]=(jydat[:,:,0]-2005)*12
 
 
-#%%
 def lightcurve(id):
     fig,ax = plt.subplots(2)
     fig.tight_layout()
-    ax[0].plot(kydat[id,:,0],kydat[id,:,1],'b-')
-    ax[0].errorbar(kdat[id,:,0],kdat[id,:,1],yerr=kdat[id,:,2],color="red",marker="x",lw=0,elinewidth=1,capsize=1.5)
-    ax[1].plot(jydat[id,:,0],jydat[id,:,1],'b-')
-    ax[1].errorbar(jdat[id,:,0],jdat[id,:,1],yerr=jdat[id,:,2],color="red",marker="x",lw=0,elinewidth=1,capsize=1.5)
-    ax[0].set(ylabel="K")
-    ax[1].set(ylabel="J")
-    ax[1].set(xlabel="months")
+    ax[1].plot(kydat[id,:,0],kydat[id,:,1],'b-')
+    ax[1].errorbar(kdat[id,:,0],kdat[id,:,1],yerr=kdat[id,:,2],color="red",marker="x",lw=0,elinewidth=1,capsize=1.5)
+    ax[0].plot(jydat[id,:,0],jydat[id,:,1],'b-')
+    ax[0].errorbar(jdat[id,:,0],jdat[id,:,1],yerr=jdat[id,:,2],color="red",marker="x",lw=0,elinewidth=1,capsize=1.5)
+    ax[1].set(ylabel="K")
+    ax[0].set(ylabel="J")
+    ax[0].set(xlabel="months")
+    ax[0].plot(jydat[id,:,0],np.ones(7)*np.median(jdat[id,:,1]),'g-')
+    ax[1].plot(kydat[id,:,0],np.ones(7)*np.median(kdat[id,:,1]),'g-')
     fig.suptitle(str(("DR11= " , int(lut[id,0]))))
   
 #%%
@@ -62,9 +63,6 @@ for i in range(114243):
     kdist[i] = kdist[i] + (np.sum((kmean[i]-kup)/kuperr) + np.sum((kmean[i]-kdown)/kdownerr))/1#kmean[i]
     jdist[i] = jdist[i] + (np.sum((jmean[i]-jup)/juperr) + np.sum((jmean[i]-jdown)/jdownerr))/1#jmean[i]
 
-#%%
-import matplotlib.pyplot as plt
-
 plt.hist(np.log(kdist),bins=1000,alpha=0.6)
 plt.hist(np.log(jdist),bins=1000,alpha=0.6)
 plt.show()
@@ -80,16 +78,18 @@ for i in range(114243):
 
 #%%
 #peak value dector combined with wst to return variable objects with single peaks
-#%%
+
 #parameters:
-peaklimit = 1
-wstLimit = 2
-devLimit = 6
+peakslimit = 2
+spikelimit=1
+wstLimit = 0
+devLimit = 4
 
 #welch stetson test
 def delta(data,error):
     mean = np.mean(data)
     return (mean - data)/error
+
 """#monthy wst
 wst = np.zeros(np.size(kdat[:,0,0])) 
 nudge = 0
@@ -101,6 +101,7 @@ for j in range(nudge+3):
         if new > wst[i] or wst[i]==0:
             wst[i]=new
 """
+#yearly wst
 wst = np.zeros(np.size(kydat[:,0,0])) 
 for i in range(np.size(kydat[:,0,0])):
     kdelta = delta(kydat[i,:,1],kydat[i,:,2])
@@ -109,23 +110,40 @@ for i in range(np.size(kydat[:,0,0])):
     if new > wst[i] or wst[i]==0:
         wst[i]=new
 
-kmean = np.expand_dims(np.mean(kdat[:,:,1],axis=1),axis=-1)
-jmean = np.expand_dims(np.mean(jdat[:,:,1],axis=1),axis=-1)
+kmean = np.expand_dims(np.median(kdat[:,:,1],axis=1),axis=-1)
+jmean = np.expand_dims(np.median(jdat[:,:,1],axis=1),axis=-1)
 
 kdiffnum = ((kydat[:,:,1]-kmean)/kydat[:,:,2])>devLimit
 jdiffnum = ((jydat[:,:,1]-jmean)/jydat[:,:,2])>devLimit
+
+kdipnum = ((kmean-kydat[:,:,1])/kydat[:,:,2])>devLimit
+jdipnum = ((jmean-jydat[:,:,1])/jydat[:,:,2])>devLimit
 
 objType = np.zeros(114243)
 kType = np.zeros(114243)
 jType = np.zeros(114243)
 
 #create padded array
+kpad = np.zeros((114243,9))
+jpad = np.zeros((114243,9))
 kdiffpad = np.zeros((114243,9))
 jdiffpad = np.zeros((114243,9))
 
+kpad[:,1:-1]=kydat[:,:,1]
+jpad[:,1:-1]=jydat[:,:,1]
 kdiffpad[:,1:-1]=kdiffnum
 jdiffpad[:,1:-1]=jdiffnum
- 
+
+spikeside= np.zeros(114243)
+
+ #determines if a peak is higher than adjacnt points by a threshold
+for j in range(7):
+    i=j+1
+    for k in range(114243):
+        if (kpad[k,i]-kpad[k,i-1])/kdat[k,j,2]>spikelimit and (kpad[k,i]-kpad[k,i+1])/kdat[k,j,2]>spikelimit and (jpad[k,i]-jpad[k,i-1])/jdat[k,j,2]>spikelimit and (jpad[k,i]-jpad[k,i+1])/jdat[k,j,2]>spikelimit:
+            spikeside[k] = 1
+
+
 counts=[0,0]#sn/agn count
 
 for i in range(114243):
@@ -137,7 +155,7 @@ for i in range(114243):
             while j < 7:
 
                 k= j+1 #agn test. If many peaks together or more than n peaks per curve
-                if np.sum(kdiffpad[i,k-1:k+1])>1 or np.sum(jdiffpad[i,k-1:k+1])>1 or np.sum(kdiffnum[i,:])>peaklimit or np.sum(jdiffnum[i,:]>peaklimit):
+                if np.sum(kdiffpad[i,k-1:k+1])>1 or np.sum(jdiffpad[i,k-1:k+1])>1 or np.sum(kdiffnum[i,:])>peakslimit or np.sum(jdiffnum[i,:]>peakslimit):
                     #classify as an agn
                     objType[i] = 2
                     #add 1 to agn count
@@ -145,10 +163,11 @@ for i in range(114243):
                     j=10 #end loop
 
                 #SN band coincidence test
-                elif kdiffnum[i,j] == jdiffnum[i,j] and kdiffnum[i,j] > 0:
+                elif np.sum(kdiffnum[i]) == np.sum(jdiffnum[i]) and spikeside[i] == 1:
                     objType[i] = 1
                     lightcurve(i)
                     plt.show()
+                    print(spikeside[i])
                     #print(kdiffnum[i,:])
                     #print(jdiffnum[i,:])
                     #print(kcoincidence[i],jcoincidence[i])
@@ -222,7 +241,7 @@ lut = np.loadtxt("data/LUT.npy")
 ids = lut[big]
 
 #%%
-
+#plotting of spatial region of "zero" objects
 kzero = np.any(kdat[:,:,1]==0,axis=1)
 jzero = np.any(jdat[:,:,1]==0,axis=1)
 
@@ -261,3 +280,8 @@ plt.plot(corek[:,1],corek[:,2],'g.')
 plt.plot(corej[:,1],corej[:,2],'g.')
 plt.show()
 #%%
+
+toterr = np.sum(kydat[:,:,2],axis=0)
+tot = np.sum(kydat[:,:,1],axis=0)
+
+plt.errorbar(kydat[0,:,0],tot,toterr)
