@@ -16,6 +16,17 @@ lut = np.loadtxt("data/LUT.npy")
 kydat[:,:,0]=(kydat[:,:,0]-2005)*12
 jydat[:,:,0]=(jydat[:,:,0]-2005)*12
 
+#%%
+#function required for wst test
+def delta(data,error):
+    mean = np.sum(data*error**-2)/np.sum(error**-2)
+    return (data-mean)/error
+
+#wst function
+def wstest(jdata,jerr,kdata,kerr):
+    kdelta = delta(kdata,kerr)
+    jdelta = delta(jdata,jerr)
+    return (1/np.sqrt(7*6))*np.sum(kdelta*jdelta)
 
 def lightcurve(id):
     fig,ax = plt.subplots(2)
@@ -31,50 +42,30 @@ def lightcurve(id):
     ax[1].plot(kydat[id,:,0],np.ones(7)*np.median(kdat[id,:,1]),'g-')
     fig.suptitle(str(("DR11= " , int(lut[id,0]))))
   
-#%%
-
-chisq = chisquare(kydat[:,:,1],axis=1)[0]
-
+#chisq = chisquare(kydat[:,:,1],axis=1)[0]
 
 #%%
-#Varability imbalance detection
-
-kmean = np.expand_dims(np.mean(kdat[:,:,1],axis=1),axis=-1)
-jmean = np.expand_dims(np.mean(jdat[:,:,1],axis=1),axis=-1)
-
-kUpOrDown = (kdat[:,:,1] > kmean) #create a masking array to apply to the original data to seperate into >mean and <mean
-jUpOrDown = (jdat[:,:,1] > jmean)
-
-print(np.sum(kUpOrDown)/np.size(kdat))
-#this is a really stupid way of doing it but its funciton and doesnt work so I cba to change it
-kdist = np.zeros(114243)
-jdist = np.zeros(114243)
+#wst but removing a point
+wst = np.zeros((114243,7))
+for j in range(7):
+    currj = np.delete(jydat[:,:,1:],j,axis=1)
+    currk = np.delete(jydat[:,:,1:],j,axis=1)
+    print(j)
+    for i in range(114243):
+        wst[i,j]=wstest(currj[i,:,0],currj[i,:,1],currk[i,:,0],currk[i,:,1])
+#%%
+count=0
 for i in range(114243):
-    kup   = kdat[i,kUpOrDown[i,:],1]
-    jup   = jdat[i,jUpOrDown[i,:],1]
-    kdown = kdat[i,~kUpOrDown[i,:],1]
-    jdown = jdat[i,~jUpOrDown[i,:],1]
-
-    kuperr   = kdat[i,kUpOrDown[i,:],2]
-    juperr   = jdat[i,jUpOrDown[i,:],2]
-    kdownerr = kdat[i,~kUpOrDown[i,:],2]
-    jdownerr = jdat[i,~jUpOrDown[i,:],2]
-
-    kdist[i] = kdist[i] + (np.sum((kmean[i]-kup)/kuperr) + np.sum((kmean[i]-kdown)/kdownerr))/1#kmean[i]
-    jdist[i] = jdist[i] + (np.sum((jmean[i]-jup)/juperr) + np.sum((jmean[i]-jdown)/jdownerr))/1#jmean[i]
-
-plt.hist(np.log(kdist),bins=1000,alpha=0.6)
-plt.hist(np.log(jdist),bins=1000,alpha=0.6)
-plt.show()
-
-for i in range(114243):
-    if kdist[i]>10:
-        plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
-        plt.errorbar(kdat[i,:,0],kdat[i,:,1],yerr=kdat[i,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
-        print(i,kdist[i])
+    if np.std(wst[i,:])>3:
+        count+=1
+        plt.plot(jydat[0,:,0],wst[i,:])
+        plt.show()
+        lightcurve(i)
         plt.show()
 
-
+print(count)
+#%%
+plt.hist(np.log(np.std(wst,axis=1)).ravel(),bins=1000)
 
 #%%
 #peak value dector combined with wst to return variable objects with single peaks
@@ -84,11 +75,6 @@ peakslimit = 2
 spikelimit=1
 wstLimit = 0
 devLimit = 4
-
-#welch stetson test
-def delta(data,error):
-    mean = np.mean(data)
-    return (mean - data)/error
 
 """#monthy wst
 wst = np.zeros(np.size(kdat[:,0,0])) 
@@ -101,14 +87,8 @@ for j in range(nudge+3):
         if new > wst[i] or wst[i]==0:
             wst[i]=new
 """
-#yearly wst
 wst = np.zeros(np.size(kydat[:,0,0])) 
-for i in range(np.size(kydat[:,0,0])):
-    kdelta = delta(kydat[i,:,1],kydat[i,:,2])
-    jdelta = delta(jydat[i,:,1],jydat[i,:,2])
-    new = np.sqrt(1/(7*6))*np.sum(kdelta*jdelta)
-    if new > wst[i] or wst[i]==0:
-        wst[i]=new
+
 
 kmean = np.expand_dims(np.median(kdat[:,:,1],axis=1),axis=-1)
 jmean = np.expand_dims(np.median(jdat[:,:,1],axis=1),axis=-1)
@@ -148,7 +128,7 @@ counts=[0,0]#sn/agn count
 
 for i in range(114243):
     #if object is variable
-    if wst[i]>wstLimit:         
+    if wstest(jydat[i,:,1],jydat[i,:,2],kydat[i,:,1],kydat[i,:,2])>wstLimit:         
             
             #test each point to:
             j=0
@@ -280,8 +260,59 @@ plt.plot(corek[:,1],corek[:,2],'g.')
 plt.plot(corej[:,1],corej[:,2],'g.')
 plt.show()
 #%%
+#lightcurve of the field and variable objects within it.
+j=0
+tot = np.zeros(7)
+toterr = tot.copy()
+for i in range(114243):
+    if wstest(jydat[i,:,1],jydat[i,:,2],kydat[i,:,1],kydat[i,:,2])>1:
+        toterr += kydat[i,:,2]
+        tot += kydat[i,:,1]
+        j=j+1
+print(j)
+plt.errorbar(jydat[0,:,0],tot,toterr)
 
-toterr = np.sum(kydat[:,:,2],axis=0)
-tot = np.sum(kydat[:,:,1],axis=0)
 
-plt.errorbar(kydat[0,:,0],tot,toterr)
+#%%
+print(np.where(lut==62253))
+lightcurve(95788)
+
+
+#%%
+#Varability imbalance detection
+"""
+kmean = np.expand_dims(np.mean(kdat[:,:,1],axis=1),axis=-1)
+jmean = np.expand_dims(np.mean(jdat[:,:,1],axis=1),axis=-1)
+
+kUpOrDown = (kdat[:,:,1] > kmean) #create a masking array to apply to the original data to seperate into >mean and <mean
+jUpOrDown = (jdat[:,:,1] > jmean)
+
+print(np.sum(kUpOrDown)/np.size(kdat))
+#this is a really stupid way of doing it but its funciton and doesnt work so I cba to change it
+kdist = np.zeros(114243)
+jdist = np.zeros(114243)
+for i in range(114243):
+    kup   = kdat[i,kUpOrDown[i,:],1]
+    jup   = jdat[i,jUpOrDown[i,:],1]
+    kdown = kdat[i,~kUpOrDown[i,:],1]
+    jdown = jdat[i,~jUpOrDown[i,:],1]
+
+    kuperr   = kdat[i,kUpOrDown[i,:],2]
+    juperr   = jdat[i,jUpOrDown[i,:],2]
+    kdownerr = kdat[i,~kUpOrDown[i,:],2]
+    jdownerr = jdat[i,~jUpOrDown[i,:],2]
+
+    kdist[i] = kdist[i] + (np.sum((kmean[i]-kup)/kuperr) + np.sum((kmean[i]-kdown)/kdownerr))/1#kmean[i]
+    jdist[i] = jdist[i] + (np.sum((jmean[i]-jup)/juperr) + np.sum((jmean[i]-jdown)/jdownerr))/1#jmean[i]
+
+plt.hist(np.log(kdist),bins=1000,alpha=0.6)
+plt.hist(np.log(jdist),bins=1000,alpha=0.6)
+plt.show()
+
+for i in range(114243):
+    if kdist[i]>10:
+        plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
+        plt.errorbar(kdat[i,:,0],kdat[i,:,1],yerr=kdat[i,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
+        print(i,kdist[i])
+        plt.show()
+"""
