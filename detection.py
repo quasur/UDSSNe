@@ -166,6 +166,34 @@ for id in range(np.size(kpeakObjs[:,0,0])):
    
     plt.show()
 """
+
+#%%
+#functions for stat test analysis.
+
+def peaktest(jdata,kdata,jerr,kerr):
+    javg = np.median(jdata)
+    kavg = np.median(kdata)
+    
+    jpeaks = (jdata-javg)/jerr
+    kpeaks = (kdata-kavg)/kerr
+
+    jdeviations = np.abs(jpeaks)
+    kdeviations = np.abs(kpeaks)
+
+    return jpeaks,kpeaks,jdeviations,kdeviations
+
+def adjacencytest(jdata,kdata,jerr,kerr):
+    length = np.size(jdata)    
+    kpad = np.zeros(length)
+    jpad = np.zeros(length)
+    kdiffpad = np.zeros(length)
+    jdiffpad = np.zeros(length)
+    kpad[1:-1]=kdata
+    jpad[1:-1]=jdata
+    kdiffpad[1:-1]=kdiffnum
+    jdiffpad[1:-1]=jdiffnum
+
+
 #%%
 i = 95788
 lightcurve(i)
@@ -219,6 +247,8 @@ for i in range(kdatbig[:,0,0].size):
     plt.show()
 lut = np.loadtxt("data/LUT.npy")
 ids = lut[big]
+
+
 
 #%%
 #plotting of spatial region of "zero" objects
@@ -316,3 +346,8 @@ for i in range(114243):
         print(i,kdist[i])
         plt.show()
 """
+
+
+
+
+
