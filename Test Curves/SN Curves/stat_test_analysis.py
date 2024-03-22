@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from chi_square import chi_square
 from time_series_generator import generate_time_series
 import scipy.stats
+from welch_stetson import welch_stetson
 
 steps = 20
 total_runs = 10
@@ -16,25 +17,12 @@ for run in range(total_runs):
     print(run)
     for i, z in enumerate(z_runs):
         for j, ps in enumerate(semester_runs):
-             #for k, m in enumerate(m_runs):
-             k_x, k_y, k_y_err, j_x, j_y, j_y_err = generate_time_series(z, ps, -24)
-             k_chi = chi_square(k_y, k_y_err)
-             j_chi = chi_square(j_y, j_y_err)
+            # for k, m in enumerate(m_runs):
+            k_x, k_y, k_y_err, j_x, j_y, j_y_err = generate_time_series(z, ps, -24)
+            var = welch_stetson(k_y, k_y_err, j_y, j_y_err)
 
-             #k_1sig = scipy.stats.chi2.ppf(0.6825, df=k_x.size-1)
-             #k_2sig = scipy.stats.chi2.ppf(0.9545, df=k_x.size - 1)
-             #k_3sig = scipy.stats.chi2.ppf(0.9973, df=k_x.size - 1)
-             #k_4sig = scipy.stats.chi2.ppf(0.999937, df=k_x.size - 1)
-             variability[i][j] += (k_chi > 90)
-             count += (k_chi > 90)
-                # variability[i, j] += (k_chi > 90)
-                # variability[i, j] += (k_chi > k_2sig)
-                # variability[i, j] += (k_chi > k_3sig)
-                # variability[i, j] += (k_chi > k_4sig)
-
-        #print(f"run: {run+1}, i: {i}")
-
-# np.savetxt("significance_heatmap_-23.5_expanded", variability)
+            variability[i][j] += (var > 0.7)
+            count += (var > 0.7)
 
 # variability = np.array([np.loadtxt("significance_heatmap_-23.5_expanded"), np.loadtxt(
 #     "significance_heatmap_-23_expanded"), np.loadtxt("significance_heatmap_-22.5_expanded")])
@@ -53,12 +41,12 @@ for run in range(total_runs):
 # plt.ylabel("Average Detection Significance")
 # plt.legend()
 # plt.axhline(3, c="black", linestyle="--")
-    #plt.figure()
+# plt.figure()
 
-plt.imshow(variability/total_runs, cmap="winter", extent=[0, 80, 3, 0.5], aspect='auto')
+plt.imshow(variability / total_runs, cmap="winter", extent=[0, 80, 3, 0.5], aspect='auto')
 plt.xlabel("Peak Semester")
 plt.ylabel("z")
 plt.colorbar()
 plt.show()
 
-print(count/(steps*steps*total_runs) * 100)
+print(count / (steps * steps * total_runs) * 100)

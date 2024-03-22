@@ -5,6 +5,7 @@ from luminosity_distance import redshift_to_lum_distance
 import scipy.stats
 from chi_square import chi_square
 import matplotlib.pyplot as plt
+from welch_stetson import welch_stetson
 
 
 def get_data_in_mag_range(z, magnitude, mag_range):
@@ -60,11 +61,15 @@ def generate_background_from_data(data):
 
 def get_FPR(z, magnitude, magnitude_range, runs, threshold):
     k_x = np.loadtxt("..\\SN Curves\\K_band_x-axis.txt")
+    j_x = np.loadtxt("..\\SN Curves\\J_band_x-axis.txt")
 
     data = get_data_in_mag_range(z, magnitude, magnitude_range)
     # Get errors from UDS data
     k_y_err = data[:, 4:4 + (k_x.size*2):2]
     k_y_err_mean = np.mean(k_y_err, axis=0)
+
+    j_y_err = data[:, 4 + (k_x.size*2)::2]
+    j_y_err_mean = np.mean(j_y_err, axis=0)
 
     runs = runs
 
@@ -75,10 +80,15 @@ def get_FPR(z, magnitude, magnitude_range, runs, threshold):
     # k_4sig = scipy.stats.chi2.ppf(0.999937, df=k_x.size - 1)
     count = 0
     for i in range(runs):
-        print(i)
+        #print(i)
         k_y = np.zeros(k_x.size)
         k_y += np.random.normal(0, k_y_err_mean)
-        k_chi = chi_square(k_y, k_y_err_mean)
+
+        j_y = np.zeros(j_x.size)
+
+        j_y += np.random.normal(0, j_y_err_mean)
+
+        k_chi = welch_stetson(k_y, k_y_err_mean, j_y, j_y_err_mean)
         count += (k_chi > threshold)
         #variance[i] += (k_chi > 50)
         #variance[i] += (k_chi > k_2sig)
@@ -88,17 +98,17 @@ def get_FPR(z, magnitude, magnitude_range, runs, threshold):
     return count
 
 
-# thresholds = np.linspace(85, 95, 10)
-# expected_arr = np.zeros(10)
+thresholds = np.linspace(0.6, 0.8, 10)
+expected_arr = np.zeros(10)
 #
-# for i, t in enumerate(thresholds):
-#     fpr = get_FPR(1.5, -22.5, 0.5, 1000000, t)
-#     ratio = (fpr/1000000)
-#     expected_arr[i] = 114243*ratio
-#     print(f"count: {fpr}, percentage: {ratio*100}%, expected number from UDS: {114243*ratio}")
-#
-# plt.plot(thresholds, expected_arr)
-# plt.xlabel("Threshold")
-# plt.ylabel("Expected False Positives")
-# plt.axhline(1, c="black", linestyle='--')
-# plt.show()
+for i, t in enumerate(thresholds):
+    fpr = get_FPR(1.5, -22.5, 0.5, 100000, t)
+    ratio = (fpr/1000000)
+    expected_arr[i] = 114243*ratio
+    print(f"count: {fpr}, percentage: {ratio*100}%, expected number from UDS: {114243*ratio}")
+
+plt.plot(thresholds, expected_arr)
+plt.xlabel("Threshold")
+plt.ylabel("Expected False Positives")
+plt.axhline(1, c="black", linestyle='--')
+plt.show()
