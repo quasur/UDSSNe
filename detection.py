@@ -45,25 +45,8 @@ def lightcurve(id):
 #chisq = chisquare(kydat[:,:,1],axis=1)[0]
 
 #%%
-#wst but removing a point
-wst = np.zeros((114243,7))
-for j in range(7):
-    currj = np.delete(jydat[:,:,1:],j,axis=1)
-    currk = np.delete(jydat[:,:,1:],j,axis=1)
-    print(j)
-    for i in range(114243):
-        wst[i,j]=wstest(currj[i,:,0],currj[i,:,1],currk[i,:,0],currk[i,:,1])
-#%%
-count=0
-for i in range(114243):
-    if np.std(wst[i,:])>3:
-        count+=1
-        plt.plot(jydat[0,:,0],wst[i,:])
-        plt.show()
-        lightcurve(i)
-        plt.show()
 
-print(count)
+
 #%%
 plt.hist(np.log(np.std(wst,axis=1)).ravel(),bins=1000)
 
@@ -134,7 +117,7 @@ for i in range(114243):
             j=0
             while j < 7:
 
-                k= j+1 #agn test. If many peaks together or more than n peaks per curve
+                k=j+1 #agn test. If many peaks together or more than n peaks per curve
                 if np.sum(kdiffpad[i,k-1:k+1])>1 or np.sum(jdiffpad[i,k-1:k+1])>1 or np.sum(kdiffnum[i,:])>peakslimit or np.sum(jdiffnum[i,:]>peakslimit):
                     #classify as an agn
                     objType[i] = 2
@@ -170,9 +153,10 @@ for id in range(np.size(kpeakObjs[:,0,0])):
 #%%
 #functions for stat test analysis.
 
+#returns the number of stds a point is from the mean
 def peaktest(jdata,kdata,jerr,kerr):
-    javg = np.median(jdata)
-    kavg = np.median(kdata)
+    javg = np.mean(jdata)
+    kavg = np.mean(kdata)
     
     jpeaks = (jdata-javg)/jerr
     kpeaks = (kdata-kavg)/kerr
@@ -182,16 +166,35 @@ def peaktest(jdata,kdata,jerr,kerr):
 
     return jpeaks,kpeaks,jdeviations,kdeviations
 
-def adjacencytest(jdata,kdata,jerr,kerr):
-    length = np.size(jdata)    
-    kpad = np.zeros(length)
+#Returns the number of points adjacent to it within 3stds will be 1 if none match becase its matching itself
+def adjacencytest(jdata,jerr,kdata,kerr):
+    length = np.size(jdata)
     jpad = np.zeros(length)
-    kdiffpad = np.zeros(length)
-    jdiffpad = np.zeros(length)
+    kpad = kpad.copy()
+    jadjnum = kpad.copy()
+    kadjnum = kpad.copy()
     kpad[1:-1]=kdata
     jpad[1:-1]=jdata
-    kdiffpad[1:-1]=kdiffnum
-    jdiffpad[1:-1]=jdiffnum
+    for j in range(np.size(jdata)):
+        i=j+1
+        jadjnum[i] = np.abs((jpad[i]-jpad[i-1:i+1])/jerr[j])<3
+        kadjnum[i] = np.abs((kpad[i]-kpad[i-1:i+1])/kerr[j])<3
+    return jadjnum , kadjnum
+
+
+#wst but removing a point YEARLY DATA BEST
+def wstestremove(jdata,jerr,kdata,kerr):
+    wst = np.zeros((114243,7))
+    for j in range(7):
+        currj = np.delete(jdata,j)
+        currk = np.delete(kdata,j)
+        currjerr = np.delete(jerr,j)
+        currkerr = np.delete(kerr,j)
+        print(j)
+        for i in range(114243):
+            wst[i,j]=wstest(currj,currjerr,currk,currkerr)
+    return wst
+
 
 
 #%%
