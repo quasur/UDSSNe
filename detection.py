@@ -1,6 +1,5 @@
 #%%
 import numpy as np
-from scipy.stats import chisquare
 import matplotlib.pyplot as plt
 #import dataset
 
@@ -12,6 +11,19 @@ kydat = np.loadtxt("data/kydata.npy").reshape((114243,7,3))
 jydat = np.delete(np.loadtxt("data/jydata.npy").reshape((114243,8,3)),(1),axis=1)
 
 lut = np.loadtxt("data/LUT.npy")
+AGNlut = np.loadtxt("data/AGNLUT.npy")
+
+#find found SN array indexes and DR11 ids
+foundSN = np.array([147703,89852,62253,66612,24605,219616,148305,263613,214136,210486,154039,240562,224386,217727,117014,252582,248061])
+arrSN=foundSN
+for i in range(np.size(foundSN)):
+    arrSN[i], = np.where(lut[:,0].astype(int)==foundSN[i])[0]
+
+#convert agn dr11s to array indexes
+arrAGN = AGNlut.copy()
+for i in range(np.size(arrAGN)):
+    arrAGN[i], = np.where(lut[:,0].astype(int)==AGNlut[i])[0]
+
 #convert years to months
 kydat[:,:,0]=(kydat[:,:,0]-2005)*12
 jydat[:,:,0]=(jydat[:,:,0]-2005)*12
@@ -41,14 +53,6 @@ def lightcurve(id):
     ax[0].plot(jydat[id,:,0],np.ones(7)*np.median(jdat[id,:,1]),'g-')
     ax[1].plot(kydat[id,:,0],np.ones(7)*np.median(kdat[id,:,1]),'g-')
     fig.suptitle(str(("DR11= " , int(lut[id,0]))))
-  
-#chisq = chisquare(kydat[:,:,1],axis=1)[0]
-
-#%%
-
-
-#%%
-plt.hist(np.log(np.std(wst,axis=1)).ravel(),bins=1000)
 
 #%%
 #peak value dector combined with wst to return variable objects with single peaks
@@ -56,7 +60,7 @@ plt.hist(np.log(np.std(wst,axis=1)).ravel(),bins=1000)
 #parameters:
 peakslimit = 2
 spikelimit=1
-wstLimit = 0
+wstLimit = 0.7
 devLimit = 4
 
 """#monthy wst
@@ -206,18 +210,6 @@ print(lut[i,0])
 
 plt.show()
 
-#%%
-i=66612
-plt.plot(kydat[i,:,0],kydat[i,:,1],'r-')
-plt.errorbar(kdat[i,:,0],kdat[i,:,1],yerr=kdat[i,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
-plt.plot(jydat[i,:,0],jydat[i,:,1],'r-')
-plt.errorbar(jdat[i,:,0],jdat[i,:,1],yerr=jdat[i,:,2],color="green",marker="x",lw=0,elinewidth=1,capsize=1.5)
-
-#%%
-plt.cla()
-plt.hist(np.log(wst),bins=1000,color="blue",alpha=0.7)
-plt.hist(np.log(chisq),bins=1000,color="red",alpha=0.7)
-plt.show()
 
 #%%
 

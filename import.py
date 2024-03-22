@@ -81,3 +81,16 @@ np.savetxt("data/kydata.npy",kdata.reshape(kdata.shape[0],-1))
 #%%LUT
 
 np.savetxt("data/LUT.npy",messdata[:,0:3])
+
+#%%
+from astropy.io import fits
+import numpy as np
+
+f = fits.open("data/variabledata.fits")
+fitsdata = np.array(f[1].data)
+messdata = np.array(fitsdata.tolist())
+
+AGNlut = messdata[:,0].astype(int)
+
+np.savetxt("data/AGNLUT.npy",AGNlut)
+
