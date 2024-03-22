@@ -38,7 +38,7 @@ np.savetxt("data/kdata.npy",kdata.reshape(kdata.shape[0],-1))
 #np.loadtxt("data/kdata.npy").reshape((114243,38,3))
 #np.loadtxt("data/jdata.npy").reshape((114243,35,3))
 
-#%% semersterly data
+#%% yearly data
 #%%
 from astropy.io import fits
 from astropy.table import table
@@ -81,3 +81,16 @@ np.savetxt("data/kydata.npy",kdata.reshape(kdata.shape[0],-1))
 #%%LUT
 
 np.savetxt("data/LUT.npy",messdata[:,0:3])
+
+#%%
+from astropy.io import fits
+import numpy as np
+
+f = fits.open("data/variabledata.fits")
+fitsdata = np.array(f[1].data)
+messdata = np.array(fitsdata.tolist())
+
+AGNlut = messdata[:,0].astype(int)
+
+np.savetxt("data/AGNLUT.npy",AGNlut)
+
