@@ -112,3 +112,71 @@ plt.xlabel("Threshold")
 plt.ylabel("Expected False Positives")
 plt.axhline(1, c="black", linestyle='--')
 plt.show()
+
+#%%
+
+#import data we use
+#kdat = np.loadtxt("..\\..\\data\\kdata.npy").reshape((114243,38,3))
+#jdat = np.loadtxt("..\\..\\data\\jdata.npy").reshape((114243,35,3))
+
+kydat = np.loadtxt("..\\..\\data\\kydata.npy").reshape((114243,7,3))
+jydat = np.delete(np.loadtxt("..\\..\\data\jydata.npy").reshape((114243,8,3)),(1),axis=1)
+
+lut = np.loadtxt("..\\..\\data\\LUT.npy")
+AGNlut = np.loadtxt("..\\..\\data\\AGNLUT.npy")
+
+#find array indexes of agn
+arrAGN = AGNlut.copy()
+for i in range(np.size(arrAGN)):
+    arrAGN[i], = (np.where(lut[:,0].astype(int)==AGNlut[i])[0])
+
+arrAGN = arrAGN.astype(np.int64)
+#returns the number of stds a point is from the mean
+def peaktest(jdata,kdata,jerr,kerr):
+    javg = np.mean(jdata)
+    kavg = np.mean(kdata)
+    
+    jpeaks = (jdata-javg)/jerr
+    kpeaks = (kdata-kavg)/kerr
+
+    jdeviations = np.abs(jpeaks)
+    kdeviations = np.abs(kpeaks)
+
+    return jpeaks,kpeaks,jdeviations,kdeviations
+i=0
+a,b,c,d=peaktest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
+
+def adjacencytest(jdata,kdata,jerr,kerr,thresh):
+    length = np.size(jdata)
+    jpad = np.zeros(length+2)
+    kpad = jpad.copy()
+    jadjnum = kpad.copy()
+    kadjnum = kpad.copy()
+    kpad[1:-1]=kdata.copy()
+    jpad[1:-1]=jdata.copy()
+    for j in range(np.size(jdata)):
+        i=j+1
+        jadjnum[i] = np.sum(np.abs((jpad[i]-jpad[i-1:i+1])/jerr[j])<thresh)>1
+        kadjnum[i] = np.sum(np.abs((kpad[i]-kpad[i-1:i+1])/kerr[j])<thresh)>1
+    return jadjnum , kadjnum
+
+
+
+def get_AGNFPR(thresh):
+    count = 0
+    for i in arrAGN:
+        jadj,kadj = adjacencytest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2],thresh)
+        if np.sum(jadj)<1  and np.sum(kadj)<1:
+            count+=1
+    return count
+
+fp = np.zeros((100))
+threshList = np.linspace(1,4,100)
+
+
+for i in range(100):
+    fp[i]=get_AGNFPR(threshList[i])
+
+plt.plot(threshList,fp)
+plt.plot([1,4],[7,7])
+plt.show()

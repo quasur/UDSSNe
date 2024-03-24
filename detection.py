@@ -171,7 +171,7 @@ def peaktest(jdata,kdata,jerr,kerr):
     return jpeaks,kpeaks,jdeviations,kdeviations
 
 #Returns the number of points adjacent to it within 3stds will be 1 if none match becase its matching itself
-def adjacencytest(jdata,jerr,kdata,kerr):
+def adjacencytest(jdata,jerr,kdata,kerr,thresh):
     length = np.size(jdata)
     jpad = np.zeros(length)
     kpad = kpad.copy()
@@ -181,8 +181,8 @@ def adjacencytest(jdata,jerr,kdata,kerr):
     jpad[1:-1]=jdata
     for j in range(np.size(jdata)):
         i=j+1
-        jadjnum[i] = np.abs((jpad[i]-jpad[i-1:i+1])/jerr[j])<3
-        kadjnum[i] = np.abs((kpad[i]-kpad[i-1:i+1])/kerr[j])<3
+        jadjnum[i] = np.sum(np.abs((jpad[i]-jpad[i-1:i+1])/jerr[j])<thresh)>1
+        kadjnum[i] = np.sum(np.abs((kpad[i]-kpad[i-1:i+1])/kerr[j])<thresh)>1
     return jadjnum , kadjnum
 
 
