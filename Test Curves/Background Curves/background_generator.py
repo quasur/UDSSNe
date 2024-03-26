@@ -156,8 +156,8 @@ def adjacencytest(jdata,kdata,jerr,kerr,thresh):
     jpad[1:-1]=jdata.copy()
     for j in range(np.size(jdata)):
         i=j+1
-        jadjnum[i] = np.sum(np.abs((jpad[i]-jpad[i-1:i+1])/jerr[j])<thresh)>1
-        kadjnum[i] = np.sum(np.abs((kpad[i]-kpad[i-1:i+1])/kerr[j])<thresh)>1
+        jadjnum[i] = np.sum(((jpad[i]-jpad[i-1:i+1])/jerr[j])<thresh)==1
+        kadjnum[i] = np.sum(((kpad[i]-kpad[i-1:i+1])/kerr[j])<thresh)==1
     return jadjnum , kadjnum
 
 
@@ -166,17 +166,17 @@ def get_AGNFPR(thresh):
     count = 0
     for i in arrAGN:
         jadj,kadj = adjacencytest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2],thresh)
-        if np.sum(jadj)<1  and np.sum(kadj)<1:
+        if np.sum(jadj)==1  and np.sum(kadj)==1:
             count+=1
     return count
 
 fp = np.zeros((100))
-threshList = np.linspace(1,4,100)
+threshList = np.linspace(0,3,100)
 
 
 for i in range(100):
     fp[i]=get_AGNFPR(threshList[i])
 
 plt.plot(threshList,fp)
-plt.plot([1,4],[7,7])
+plt.plot([0,3],[7,7])
 plt.show()

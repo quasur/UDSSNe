@@ -40,6 +40,33 @@ def wstest(jdata,jerr,kdata,kerr):
     jdelta = delta(jdata,jerr)
     return (1/np.sqrt(7*6))*np.sum(kdelta*jdelta)
 
+#Returns the number of points adjacent to it within 3stds will be 1 if none match becase its matching itself
+def wstestremove(jdata,jerr,kdata,kerr):
+    wst = np.zeros((114243,7))
+    for j in range(7):
+        currj = np.delete(jdata,j)
+        currk = np.delete(kdata,j)
+        currjerr = np.delete(jerr,j)
+        currkerr = np.delete(kerr,j)
+        print(j)
+        for i in range(114243):
+            wst[i,j]=wstest(currj,currjerr,currk,currkerr)
+    return wst
+
+def adjacencytest(jdata,kdata,jerr,kerr,thresh):
+    length = np.size(jdata)
+    jpad = np.zeros(length+2)
+    kpad = jpad.copy()
+    jadjnum = kpad.copy()
+    kadjnum = kpad.copy()
+    kpad[1:-1]=kdata.copy()
+    jpad[1:-1]=jdata.copy()
+    for j in range(np.size(jdata)):
+        i=j+1
+        jadjnum[i] = np.sum(((jpad[i]-jpad[i-1:i+1])/jerr[j])<thresh)==1
+        kadjnum[i] = np.sum(((kpad[i]-kpad[i-1:i+1])/kerr[j])<thresh)==1
+    return jadjnum , kadjnum
+
 def lightcurve(id):
     fig,ax = plt.subplots(2)
     fig.tight_layout()
@@ -58,10 +85,8 @@ def lightcurve(id):
 #peak value dector combined with wst to return variable objects with single peaks
 
 #parameters:
-peakslimit = 2
-spikelimit=1
-wstLimit = 0.7
-devLimit = 4
+wstLimit = 0
+adjLimit = 1
 
 """#monthy wst
 wst = np.zeros(np.size(kdat[:,0,0])) 
@@ -74,78 +99,28 @@ for j in range(nudge+3):
         if new > wst[i] or wst[i]==0:
             wst[i]=new
 """
-wst = np.zeros(np.size(kydat[:,0,0])) 
-
-
-kmean = np.expand_dims(np.median(kdat[:,:,1],axis=1),axis=-1)
-jmean = np.expand_dims(np.median(jdat[:,:,1],axis=1),axis=-1)
-
-kdiffnum = ((kydat[:,:,1]-kmean)/kydat[:,:,2])>devLimit
-jdiffnum = ((jydat[:,:,1]-jmean)/jydat[:,:,2])>devLimit
-
-kdipnum = ((kmean-kydat[:,:,1])/kydat[:,:,2])>devLimit
-jdipnum = ((jmean-jydat[:,:,1])/jydat[:,:,2])>devLimit
 
 objType = np.zeros(114243)
-kType = np.zeros(114243)
-jType = np.zeros(114243)
 
-#create padded array
-kpad = np.zeros((114243,9))
-jpad = np.zeros((114243,9))
-kdiffpad = np.zeros((114243,9))
-jdiffpad = np.zeros((114243,9))
-
-kpad[:,1:-1]=kydat[:,:,1]
-jpad[:,1:-1]=jydat[:,:,1]
-kdiffpad[:,1:-1]=kdiffnum
-jdiffpad[:,1:-1]=jdiffnum
-
-spikeside= np.zeros(114243)
-
- #determines if a peak is higher than adjacnt points by a threshold
-for j in range(7):
-    i=j+1
-    for k in range(114243):
-        if (kpad[k,i]-kpad[k,i-1])/kdat[k,j,2]>spikelimit and (kpad[k,i]-kpad[k,i+1])/kdat[k,j,2]>spikelimit and (jpad[k,i]-jpad[k,i-1])/jdat[k,j,2]>spikelimit and (jpad[k,i]-jpad[k,i+1])/jdat[k,j,2]>spikelimit:
-            spikeside[k] = 1
-
-
-counts=[0,0]#sn/agn count
+counts=[0,0,0]#sn/agn count
 
 for i in range(114243):
     #if object is variable
-    if wstest(jydat[i,:,1],jydat[i,:,2],kydat[i,:,1],kydat[i,:,2])>wstLimit:         
-            
-            #test each point to:
-            j=0
-            while j < 7:
-
-                k=j+1 #agn test. If many peaks together or more than n peaks per curve
-                if np.sum(kdiffpad[i,k-1:k+1])>1 or np.sum(jdiffpad[i,k-1:k+1])>1 or np.sum(kdiffnum[i,:])>peakslimit or np.sum(jdiffnum[i,:]>peakslimit):
-                    #classify as an agn
-                    objType[i] = 2
-                    #add 1 to agn count
-                    counts[1]+=1
-                    j=10 #end loop
-
-                #SN band coincidence test
-                elif np.sum(kdiffnum[i]) == np.sum(jdiffnum[i]) and spikeside[i] == 1:
-                    objType[i] = 1
-                    lightcurve(i)
-                    plt.show()
-                    print(spikeside[i])
-                    #print(kdiffnum[i,:])
-                    #print(jdiffnum[i,:])
-                    #print(kcoincidence[i],jcoincidence[i])
-                    print(i)
-                    counts[0]+=1
-                    j = 10  #end loop
-                j+=1
+    if wstest(jydat[i,:,1],jydat[i,:,2],kydat[i,:,1],kydat[i,:,2])>wstLimit:
+        jadj,kadj = adjacencytest(jydat[i,:,1],jydat[i,:,2],kydat[i,:,1],kydat[i,:,2],adjLimit)
+        counts[0]+=1
+        if np.any(arrAGN==i):
+            counts[2]+=1
+            objType[i] = 2
+        elif np.sum(jadj)==1 and np.sum(kadj)==1:
+            objType = 1
+            counts[1]+=1
+            lightcurve(i)
+            plt.show()
+            print(i)
 
 
-
-print("total:",np.sum(wst>0.5),"SN:",np.sum(objType==1),"AGN:",np.sum(objType==2))
+print("total,SN, AGN = ", counts)
 
 """
 import matplotlib.pyplot as plt
@@ -170,34 +145,8 @@ def peaktest(jdata,kdata,jerr,kerr):
 
     return jpeaks,kpeaks,jdeviations,kdeviations
 
-#Returns the number of points adjacent to it within 3stds will be 1 if none match becase its matching itself
-def adjacencytest(jdata,jerr,kdata,kerr,thresh):
-    length = np.size(jdata)
-    jpad = np.zeros(length)
-    kpad = kpad.copy()
-    jadjnum = kpad.copy()
-    kadjnum = kpad.copy()
-    kpad[1:-1]=kdata
-    jpad[1:-1]=jdata
-    for j in range(np.size(jdata)):
-        i=j+1
-        jadjnum[i] = np.sum(np.abs((jpad[i]-jpad[i-1:i+1])/jerr[j])<thresh)>1
-        kadjnum[i] = np.sum(np.abs((kpad[i]-kpad[i-1:i+1])/kerr[j])<thresh)>1
-    return jadjnum , kadjnum
-
 
 #wst but removing a point YEARLY DATA BEST
-def wstestremove(jdata,jerr,kdata,kerr):
-    wst = np.zeros((114243,7))
-    for j in range(7):
-        currj = np.delete(jdata,j)
-        currk = np.delete(kdata,j)
-        currjerr = np.delete(jerr,j)
-        currkerr = np.delete(kerr,j)
-        print(j)
-        for i in range(114243):
-            wst[i,j]=wstest(currj,currjerr,currk,currkerr)
-    return wst
 
 
 
