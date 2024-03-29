@@ -8,12 +8,16 @@ import matplotlib.pyplot as plt
 from welch_stetson import welch_stetson
 
 
+kydat = np.loadtxt("..\\..\\data\\kydata.npy").reshape((114243,7,3))
+jydat = np.delete(np.loadtxt("..\\..\\data\jydata.npy").reshape((114243,8,3)),(1),axis=1)
+
+
 def get_data_in_mag_range(z, magnitude, mag_range):
 
     k_x = np.loadtxt("..\\SN Curves\\K_band_x-axis.txt")
 
     # Import fits data
-    file = "..\\..\\data\\month_lightcurves_J_and_K.fits"
+    file = "..\\..\\data\\semester_lightcurves_J_and_K.fits"
     curves = fits.open(file)
     fits_data = Table(curves[1].data)
 
@@ -43,14 +47,14 @@ def generate_background_from_data(data):
     # Get errors from UDS data
 
     # K band
-    k_y_err = data[:, 4:4 + (38 * 2):2]
+    k_y_err = data[:, 4:4 + (7 * 2):2]
     k_y_err_mean = np.mean(k_y_err, axis=0)
 
     k_y = np.zeros(38)
     k_y += np.random.normal(0, k_y_err_mean)
 
     # J band
-    j_y_err = data[4 + (38 * 2)::2]
+    j_y_err = data[4 + (7 * 2)::2]
     j_y_err_mean = np.mean(j_y_err, axis=0)
 
     j_y = np.zeros(38)
@@ -96,6 +100,82 @@ def get_FPR(z, magnitude, magnitude_range, runs, threshold):
         #variance[i] += (k_chi > k_4sig)
 
     return count
+
+def generate_template(z, peak_semester):
+    template_xdata = np.loadtxt("template_xdata.txt")
+    template_ydata = np.loadtxt("template_ydata.txt")
+    template_xdata /= (30 * 24)
+
+    # Move peak to x = 0
+    template_xdata -= template_xdata[np.argmax(template_ydata)]
+
+    # Stretch based on redshift
+    template_xdata *= (1 + z)
+
+    # Move peak to peak_semester
+    template_xdata += peak_semester
+
+    template_ydata *= (1 / template_ydata.max())
+
+    return template_xdata, template_ydata
+
+templatex = np.loadtxt("template_xdata.txt")
+templatey = np.loadtxt("template_ydata.txt")
+
+plt.plot(templatex,templatey)
+
+kydat = np.loadtxt("..\\..\\data\\kydata.npy").reshape((114243,7,3))
+
+
+def gen_year_SN(z, magnitude, magnitude_range, runs, threshold):
+    k_x = np.array([0,2,3,4,5,6,7])*12#np.loadtxt("..\\SN Curves\\K_band_x-axis.txt")
+    j_x = np.array([0,2,3,4,5,6,7])*12#np.loadtxt("..\\SN Curves\\J_band_x-axis.txt")
+    """
+    flux_arr = np.loadtxt("background_flux_library.txt")
+    background_index = np.random.randint(flux_arr.shape[0])
+
+    k_y = flux_arr[background_index][3:3 + (k_x.size * 2):2]
+    k_y_err = flux_arr[background_index][4:4 + (k_x.size * 2):2]
+
+    j_y = flux_arr[background_index][3 + (k_x.size * 2):3 + (k_x.size * 4):2]
+    j_y_err = flux_arr[background_index][4 + (k_x.size * 2)::2]
+
+    k_y_bg = k_y
+    j_y_bg = j_y
+    """
+
+
+    ld = luminosity_distance.redshift_to_lum_distance(z)
+    ld_known = luminosity_distance.redshift_to_lum_distance(1.5)
+
+    k_flux_diff = 10**((30-magnitude+1.9)/2.5) * (10/(ld*1e6))**2
+    j_flux_diff = 10 ** ((30 - magnitude+0.938) / 2.5) * (10 / (ld * 1e6)) ** 2
+
+    # Get flux from luminosity distance relationship
+    sn_flux_k = k_flux_diff * (ld_known / ld) ** 2
+    sn_flux_j = j_flux_diff * (ld_known / ld) ** 2
+
+    dummy_curve_x, dummy_curve_y = generate_template(z, peak_semester)
+
+    k_y = k_y_bg - np.mean(k_y_bg) + np.interp(k_x, dummy_curve_x, dummy_curve_y * sn_flux_k)
+    j_y = j_y_bg - np.mean(j_y_bg) + np.interp(j_x, dummy_curve_x, dummy_curve_y * sn_flux_j)
+
+    k_y = k_y_bg - np.mean(k_y_bg) + np.interp(k_x, dummy_curve_x, dummy_curve_y * sn_flux_k)
+    j_y = j_y_bg - np.mean(j_y_bg) + np.interp(j_x, dummy_curve_x, dummy_curve_y * sn_flux_j)
+
+
+    data = get_data_in_mag_range(z, magnitude, magnitude_range)
+    # Get errors from UDS data
+    k_y_err = data[:, 4:4 + (k_x.size*2):2]
+    k_y_err_mean = np.mean(k_y_err, axis=0)
+
+    j_y_err = data[:, 4 + (k_x.size*2)::2]
+    j_y_err_mean = np.mean(j_y_err, axis=0)
+
+
+
+    return count
+
 
 
 thresholds = np.linspace(0.6, 0.8, 10)
@@ -173,10 +253,10 @@ def get_AGNFPR(thresh):
 fp = np.zeros((100))
 threshList = np.linspace(0,3,100)
 
-
 for i in range(100):
     fp[i]=get_AGNFPR(threshList[i])
 
 plt.plot(threshList,fp)
 plt.plot([0,3],[7,7])
 plt.show()
+

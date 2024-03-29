@@ -22,9 +22,11 @@ def generate_template(z, peak_semester):
     return template_xdata, template_ydata
 
 
+
+
 def generate_time_series(z, peak_semester, magnitude, plot=False):
-    k_x = np.array([2005, 2007, 2008, 2009, 2010, 2011, 2012])#np.loadtxt("K_band_x-axis.txt")
-    j_x = np.array([2005, 2007, 2008, 2009, 2010, 2011, 2012])#np.loadtxt("J_band_x-axis.txt")
+    k_x = np.loadtxt("K_band_x-axis.txt")#np.array([2005, 2007, 2008, 2009, 2010, 2011, 2012])
+    j_x = np.loadtxt("J_band_x-axis.txt")#np.array([2005, 2007, 2008, 2009, 2010, 2011, 2012])
 
     flux_arr = np.loadtxt("background_flux_library.txt")
     background_index = np.random.randint(flux_arr.shape[0])
@@ -95,3 +97,8 @@ def generate_time_series(z, peak_semester, magnitude, plot=False):
 
 
 #kx, K_y, k_y_err, jx, J_y, j_y_err = generate_time_series(2, 50, -23, plot=True)
+
+#%%
+import numpy as np
+flux_arr = np.loadtxt("background_flux_library.txt")
+print(flux_arr)
