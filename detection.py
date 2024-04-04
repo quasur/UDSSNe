@@ -30,15 +30,13 @@ jydat[:,:,0]=(jydat[:,:,0]-2005)*12
 
 #%%
 #function required for wst test
-def delta(data,error):
-    mean = np.sum(data*error**-2)/np.sum(error**-2)
-    return (data-mean)/error
 
 #wst function
-def wstest(jdata,jerr,kdata,kerr):
-    kdelta = delta(kdata,kerr)
-    jdelta = delta(jdata,jerr)
-    return (1/np.sqrt(7*6))*np.sum(kdelta*jdelta)
+def wstest(jdata,kdata,jerr,kerr):
+    size = len(jdata)
+    kdelta = (kdata-np.sum(kdata*kerr**-2)/np.sum(kerr**-2))/kerr
+    jdelta = (jdata-np.sum(jdata*jerr**-2)/np.sum(jerr**-2))/jerr
+    return (1/np.sqrt(size*(size-1)))*np.sum(kdelta*jdelta)
 
 #Returns the number of points adjacent to it within 3stds will be 1 if none match becase its matching itself
 def wstestremove(jdata,jerr,kdata,kerr):

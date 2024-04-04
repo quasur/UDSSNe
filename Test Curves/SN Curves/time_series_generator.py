@@ -21,77 +21,96 @@ def generate_template(z, peak_semester):
 
     return template_xdata, template_ydata
 
+def generate_background_from_data(jy,ky,jyerr,kyerr):
 
-def generate_time_series(z, peak_semester, magnitude, plot=False):
-    k_x = np.array([2005, 2007, 2008, 2009, 2010, 2011, 2012])#np.loadtxt("K_band_x-axis.txt")
-    j_x = np.array([2005, 2007, 2008, 2009, 2010, 2011, 2012])#np.loadtxt("J_band_x-axis.txt")
+    #generate empty 
+    jy = jy*0 +  np.mean(jy)
+    ky = ky*0 +  np.mean(ky)
+    #generate a new point based on the error of current point
+    for i,val in enumerate(jyerr):
+        jy[i] += np.random.normal(0, val)
+    for i,val in enumerate(kyerr):
+        ky[i] += np.random.normal(0, val)
+    return jy, ky
 
-    flux_arr = np.loadtxt("background_flux_library.txt")
-    background_index = np.random.randint(flux_arr.shape[0])
 
-    k_y = flux_arr[background_index][3:3 + (k_x.size * 2):2]
-    k_y_err = flux_arr[background_index][4:4 + (k_x.size * 2):2]
-
-    j_y = flux_arr[background_index][3 + (k_x.size * 2):3 + (k_x.size * 4):2]
-    j_y_err = flux_arr[background_index][4 + (k_x.size * 2)::2]
-
-    k_y_bg = k_y
-    j_y_bg = j_y
+def generate_time_series(jdata,kdata,z, peak_semester, magnitude):
+    
+    bgjy, bgky = generate_background_from_data(jdata[:,1],kdata[:,1],jdata[:,2],kdata[:,2])
 
     # Get luminosity distance from redshift
     ld = luminosity_distance.redshift_to_lum_distance(z)
-    ld_known = luminosity_distance.redshift_to_lum_distance(1.5)
+    ld_known = 11089.08334805264 #luminosity_distance.redshift_to_lum_distance(1.5) #but as a number to save computation
 
-    k_flux_diff = 10**((30-magnitude+1.9)/2.5) * (10/(ld*1e6))**2
+    k_flux_diff = 10 ** ((30 - magnitude+ 1.9 ) / 2.5) * (10 / (ld * 1e6)) ** 2
     j_flux_diff = 10 ** ((30 - magnitude+0.938) / 2.5) * (10 / (ld * 1e6)) ** 2
 
     # Get flux from luminosity distance relationship
     sn_flux_k = k_flux_diff * (ld_known / ld) ** 2
     sn_flux_j = j_flux_diff * (ld_known / ld) ** 2
 
+
     # Get the x and y arrays for the template, given a peak_semester and redshift
     dummy_curve_x, dummy_curve_y = generate_template(z, peak_semester)
+    
+    snjy = bgjy + np.interp(jdata[:,0], dummy_curve_x, dummy_curve_y * sn_flux_j)
+    snky = bgky + np.interp(kdata[:,0], dummy_curve_x, dummy_curve_y * sn_flux_k)
+    
+    return snjy,snky,bgjy,bgky
 
-    k_y = k_y_bg - np.mean(k_y_bg) + np.interp(k_x, dummy_curve_x, dummy_curve_y * sn_flux_k)
-    j_y = j_y_bg - np.mean(j_y_bg) + np.interp(j_x, dummy_curve_x, dummy_curve_y * sn_flux_j)
-
-    if plot == True:
-        fig = plt.figure(constrained_layout=True)
-        label_ax = fig.add_subplot(111)
-        ax = [fig.add_subplot(211), fig.add_subplot(212)]
-
-        label_ax.spines['top'].set_color('none')
-        label_ax.spines['bottom'].set_color('none')
-        label_ax.spines['left'].set_color('none')
-        label_ax.spines['right'].set_color('none')
-        label_ax.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
-
-        ax[0].errorbar(k_x, k_y, yerr=k_y_err, fmt='o', label="K-band")
-        ax[0].errorbar(j_x, j_y, yerr=j_y_err, fmt='o', label="J-band")
-
-        ax[1].plot(np.append(np.insert(dummy_curve_x, 0, -50), 120),
-                   np.append(np.insert(dummy_curve_y * sn_flux_k, 0, 0), 0), label="K-band")
-        ax[1].plot(np.append(np.insert(dummy_curve_x, 0, -50), 120),
-                   np.append(np.insert(dummy_curve_y * sn_flux_j, 0, 0), 0), label="J-band")
-
-        ax[0].tick_params(axis='x', direction='inout')
-
-        ax[1].set_xlim(ax[0].get_xlim())
-        ax[1].tick_params(axis='x', direction='inout')
-        ax[1].xaxis.set_ticks_position('both')
-
-        ax[1].set_xlabel("Month since initial observation", labelpad=15)
-        ax[0].set_ylabel(r"$\mathcal{F} - \bar{\mathcal{F}}_{bg}$", labelpad=7, fontsize=15)
-        ax[1].set_ylabel(r"$\mathcal{F}$", labelpad=10, fontsize=15)
-
-        ax[0].legend()
-        ax[1].legend()
-
-        fig.subplots_adjust(hspace=0, wspace=0)
-        plt.show()
-
-    return k_x, k_y, k_y_err, j_x, j_y, j_y_err
+kdat = np.loadtxt("../../data/kdata.npy").reshape((114243,38,3))
+jdat = np.loadtxt("../../data/jdata.npy").reshape((114243,35,3))
 
 
+kydat = np.loadtxt("../../data/kydata.npy").reshape((114243,7,3))
+jydat = np.loadtxt("../../data/jydata.npy").reshape((114243,8,3))#np.delete(,(1),axis=1)
 
-#kx, K_y, k_y_err, jx, J_y, j_y_err = generate_time_series(2, 50, -23, plot=True)
+#convert years to months
+kydat[:,:,0]=(kydat[:,:,0]-2005)*12
+jydat[:,:,0]=(jydat[:,:,0]-2005)*12
+
+id=95778
+snjy,snky,bgjy,bgky = generate_time_series(jydat[id,:,:],kydat[id,:,:],1,25,-21)
+
+#parameters and var setup
+stop = kdat[0,-1,0]
+zsize=20
+tsize=20
+redshifts = np.linspace(0.2,4,zsize)
+peakmonth = np.linspace(0,stop,tsize)
+repeats = 10
+SNresultarr = np.zeros((zsize,tsize))
+BGresultarr = np.ones((zsize,tsize))*10
+
+def wstest(jdata,kdata,jerr,kerr):
+    size = len(jdata)
+    kdelta = (kdata-np.sum(kdata*kerr**-2)/np.sum(kerr**-2))/kerr
+    jdelta = (jdata-np.sum(jdata*jerr**-2)/np.sum(jerr**-2))/jerr
+    index = (1/np.sqrt(size*(size-1)))*np.sum(kdelta*jdelta)
+    r=0
+    if index > 0.7:
+        r = 1
+    return r 
+
+
+for i in range(zsize):
+    for j in range(tsize):
+        blockcount = 0
+        for k in range(repeats):
+            
+            objid = np.random.randint(0,len(kdat[:,0,0]))
+            
+            samplej = np.delete(jydat[objid,:,:],(1),axis=0)
+            samplek = kydat[objid,:,:]
+
+            snjy,snky, bgjy,bgky = generate_time_series(samplej,samplek,redshifts[i],peakmonth[j],-21)
+            SNresultarr[i,j] += wstest(snjy,snky,samplej[:,2],samplek[:,2])
+            BGresultarr[i,j] += wstest(bgjy,bgky,samplej[:,2],samplek[:,2])
+    print(i)
+
+    
+#%%
+plt.imshow(SNresultarr)
+plt.show()
+plt.imshow(BGresultarr)
+plt.show()
