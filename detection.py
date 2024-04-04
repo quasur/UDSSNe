@@ -14,8 +14,8 @@ lut = np.loadtxt("data/LUT.npy")
 AGNlut = np.loadtxt("data/AGNLUT.npy")
 
 #find found SN array indexes and DR11 ids
-foundSN = np.array([147703,89852,62253,66612,24605,219616,148305,263613,214136,210486,154039,240562,224386,217727,117014,252582,248061])
-arrSN=foundSN
+foundSN = np.array([147703,89852,62253,66612,24605,219616,148305,214136,210486,154039,224386,217727,117014,252582,248061,153802,111791,104987])
+arrSN=foundSN.copy()
 for i in range(np.size(foundSN)):
     arrSN[i], = np.where(lut[:,0].astype(int)==foundSN[i])[0]
 
@@ -291,5 +291,12 @@ for i in range(114243):
 
 
 
+#%%
 
+for i in arrSN:
+    lightcurve(i)
+    plt.show()
 
+#%%
+    
+lightcurve(95788)
