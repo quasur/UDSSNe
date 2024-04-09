@@ -29,7 +29,7 @@ def welch_stetson(k_y, k_y_err, j_y, j_y_err):
 
 m = np.array([-20, -21, -22, -23, -24])
 chi_perc = np.array([18.975, 26.75, 36.575, 48.325, 62.925])
-wst_perc = np.array([23.46, 32.33, 43.65, 56.625, 73.8])
+wst_perc = np.array([22.57, 31.30, 42.15, 55.20, 71.8])
 
 #plt.scatter(m, chi_perc, marker="s", label=r"$\chi^2$")
 #plt.scatter(m, wst_perc, marker="^")

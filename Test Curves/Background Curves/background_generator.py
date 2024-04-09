@@ -98,11 +98,11 @@ def get_FPR(z, magnitude, magnitude_range, runs, threshold):
     return count
 
 
-thresholds = np.linspace(0.6, 0.8, 10)
+thresholds = np.linspace(0.7, 0.9, 10)
 expected_arr = np.zeros(10)
 #
 for i, t in enumerate(thresholds):
-    fpr = get_FPR(1.5, -22.5, 0.5, 100000, t)
+    fpr = get_FPR(1.5, -23, 0.5, 1000000, t)
     ratio = (fpr/1000000)
     expected_arr[i] = 114243*ratio
     print(f"count: {fpr}, percentage: {ratio*100}%, expected number from UDS: {114243*ratio}")

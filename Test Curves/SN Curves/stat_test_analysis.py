@@ -21,8 +21,8 @@ for run in range(total_runs):
             k_x, k_y, k_y_err, j_x, j_y, j_y_err = generate_time_series(z, ps, -24)
             var = welch_stetson(k_y, k_y_err, j_y, j_y_err)
 
-            variability[i][j] += (var > 0.7)
-            count += (var > 0.7)
+            variability[i][j] += var#(var > 0.85)
+            count += (var > 0.85)
 
 # variability = np.array([np.loadtxt("significance_heatmap_-23.5_expanded"), np.loadtxt(
 #     "significance_heatmap_-23_expanded"), np.loadtxt("significance_heatmap_-22.5_expanded")])

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.table import Table
+import pandas as pd
 
 K_x = np.loadtxt("data\\K_band_x-axis.txt")
 J_x = np.loadtxt("data\\J_band_x-axis.txt")
@@ -11,12 +12,13 @@ curves = fits.open(file)
 fits_data = Table(curves[1].data)
 columns = np.array(curves[1].columns.names[3:])
 
-object_index = 95788
+print(np.where(np.array(curves[1].data['DR11_ID']) == 104987))
+
+object_index = np.where(np.array(curves[1].data['DR11_ID']) == 252582)[0][0]
 #object_index = 22
 data = np.array(fits_data)[object_index]
-
 data = np.array(data.tolist())
-print(fits_data)
+
 K_y = data[3:3 + (K_x.size*2):2]
 K_y_err = data[4:4 + (K_x.size*2):2]
 
