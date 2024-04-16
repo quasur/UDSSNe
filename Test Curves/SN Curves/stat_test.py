@@ -74,7 +74,7 @@ kydat[:,:,0]=(kydat[:,:,0]-2005)*12
 jydat[:,:,0]=(jydat[:,:,0]-2005)*12
 
 id=95778
-snjy,snky,bgjy,bgky = generate_time_series(jydat[id,:,:],kydat[id,:,:],1,25,-21)
+snjy,snky,bgjy,bgky = generate_time_series(jdat[id,:,:],kdat[id,:,:],1,25,-21)
 
 #parameters and var setup
 stop = kdat[0,-1,0]
@@ -82,7 +82,7 @@ zsize=20
 tsize=20
 redshifts = np.linspace(0.2,4,zsize)
 peakmonth = np.linspace(0,stop,tsize)
-repeats = 10
+repeats = 50
 SNresultarr = np.zeros((zsize,tsize))
 BGresultarr = np.ones((zsize,tsize))*10
 
@@ -118,3 +118,6 @@ plt.imshow(SNresultarr)
 plt.show()
 plt.imshow(BGresultarr)
 plt.show()
+
+print("TPR= ",np.sum(SNresultarr)/(zsize*tsize*repeats))
+print("FPR= ",np.sum(BGresultarr)/(zsize*tsize*repeats))

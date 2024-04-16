@@ -42,17 +42,23 @@ def wstest(jdata,jerr,kdata,kerr):
 
 def lightcurve(id):
     fig,ax = plt.subplots(2)
-    fig.tight_layout()
+    plt.subplots_adjust(left=0.1,right=0.95,bottom=0.1,top=0.94,hspace=0)
     ax[1].plot(kydat[id,:,0],kydat[id,:,1],'b-')
-    ax[1].errorbar(kdat[id,:,0],kdat[id,:,1],yerr=kdat[id,:,2],color="red",marker="x",lw=0,elinewidth=1,capsize=1.5)
+    ax[1].errorbar(kdat[id,:,0],kdat[id,:,1],yerr=kdat[id,:,2],color="red",marker="x",markersize=4,lw=0,elinewidth=0.5,capsize=0)
+    ax[1].errorbar(kydat[id,:,0],kydat[id,:,1],yerr=kydat[id,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
     ax[0].plot(jydat[id,:,0],jydat[id,:,1],'b-')
-    ax[0].errorbar(jdat[id,:,0],jdat[id,:,1],yerr=jdat[id,:,2],color="red",marker="x",lw=0,elinewidth=1,capsize=1.5)
+    
+    ax[0].errorbar(jdat[id,:,0],jdat[id,:,1],yerr=jdat[id,:,2],color="red",marker="x",markersize =4,lw=0,elinewidth=0.5,capsize=0)
+    ax[0].errorbar(jydat[id,:,0],jydat[id,:,1],yerr=jydat[id,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
     ax[1].set(ylabel="K")
     ax[0].set(ylabel="J")
-    ax[0].set(xlabel="months")
-    ax[0].plot(jydat[id,:,0],np.ones(7)*np.median(jdat[id,:,1]),'g-')
-    ax[1].plot(kydat[id,:,0],np.ones(7)*np.median(kdat[id,:,1]),'g-')
-    fig.suptitle(str(("DR11= " , int(lut[id,0]))))
+    ax[1].set(xlabel="Month")
+    ax[0].xaxis.set_visible(False)
+    ax[0].set_xlim(-2,87)
+    ax[1].set_xlim(-2,87)
+    ax[0].plot(jydat[id,:,0],np.ones(7)*np.mean(jdat[id,:,1]),'g-')
+    ax[1].plot(kydat[id,:,0],np.ones(7)*np.mean(kdat[id,:,1]),'g-')
+    fig.suptitle(("DR11= %i" %(int(lut[id,0]))))
 
 #%%
 #peak value dector combined with wst to return variable objects with single peaks
