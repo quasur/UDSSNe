@@ -349,6 +349,22 @@ for i in range(114243):
 """
 
 
+#%%
 
+superColour = np.loadtxt("data/superColour.npy")
+
+print(np.where(superColour[:,0]==lut[:,0])[0])
+
+
+
+#convert agn dr11s to array indexes
+SCarr = foundSN.copy()
+for i in range(np.size(SCarr)):
+    SCarr[i]=np.where(foundSN[i]==superColour[:,0])[0].astype(int)
+
+for i in SCarr:
+    print(superColour[i,:])
+
+#2,2,2,1 = 3xSF, 1xpassive, 14x undef
 
 
