@@ -158,31 +158,35 @@ def peaktest(jdata,kdata,jerr,kerr):
     else: r=0
 
     #if total error is greater below mean than above then test is positive. 
-    if np.sum(jpeaks)<0.0 and np.sum(kpeaks)<0.0:
+    if np.sum(jpeaks)<-1 and np.sum(kpeaks)<-1:
         s=1
     else:s=0
 
     return r,s
 
 #Returns the number of points adjacent to it within 3stds will be 1 if none match becase its matching itself
-def adjacencytest(jdata,jerr,kdata,kerr):
+def adjacencytest(jdata,kdata,jerr,kerr):
     length = np.size(jdata)
-    jpad = np.zeros(length)
-    kpad = kpad.copy()
-    jadjnum = kpad.copy()
-    kadjnum = kpad.copy()
+
+
+    jpad = np.ones(length+2)*np.mean(jdata)
+    kpad = np.ones(length+2)*np.mean(kdata)
+    jadjnum = np.ones(length)
+    kadjnum = np.ones(length)
+    
     kpad[1:-1]=kdata
     jpad[1:-1]=jdata
-    for j in range(np.size(jdata)):
+    
+    for j in range(length):
         i=j+1
         #if the sum of erros of the differences between ajacent points indicates a target point is >3 error from them then
-        jadjnum[i] = np.sum(((jpad[i]-jpad[i-1:i+1])/jerr[j])<-3)==2
-        kadjnum[i] = np.sum(((kpad[i]-kpad[i-1:i+1])/kerr[j])<-3)==2
+        jadjnum[j] = np.sum(((jpad[i]-jpad[i-1:i+2])/jerr[j])>3)==2
+        kadjnum[j] = np.sum(((kpad[i]-kpad[i-1:i+2])/kerr[j])>3)==2
 
     if np.sum(jadjnum) ==1 and np.sum(kadjnum)==1:
-        r= 1
+        r= True
     else:
-        r=0
+        r=False
     return r
 
 
@@ -197,7 +201,7 @@ def wstestremove(jdata,jerr,kdata,kerr):
         currkerr = np.delete(kerr,i)
         wst[i]=wstest(currj,currjerr,currk,currkerr)
 
-    if np.sum(wst<0.7)==1: 
+    if np.sum(wst<1)==1: 
         r = 1
     else: r=0
     return r
@@ -229,27 +233,29 @@ wstremBGresultarr = np.zeros((zsize,tsize))
 #currently using a 
 for i in range(zsize):
 
-    zrange = (redshifts[1]-redshifts[0])/2
-    print(redshifts[i]-zrange,redshifts[i]+zrange)
-    zlower = pz[:,1]>redshifts[i]-zrange
-    zupper = pz[:,1]<redshifts[i]+zrange
-    pzRangeBool = zlower & zupper
+    #zrange = (redshifts[1]-redshifts[0])/2
+    #print(redshifts[i]-zrange,redshifts[i]+zrange)
+    #zlower = pz[:,1]>redshifts[i]-zrange
+    #zupper = pz[:,1]<redshifts[i]+zrange
+    #pzRangeBool = zlower & zupper
     #filter redshift list to range
-    zobjlist = pz[pzRangeBool,:]
+    #zobjlist = pz[pzRangeBool,:]
     #number of objects in the range
-    numObj = np.sum(pzRangeBool)
+    #numObj = np.sum(pzRangeBool)
     
     for j in range(tsize):
         blockcount = 0
         for k in range(repeats):
             
-            zobjid = pz[np.random.randint(0,numObj),0]
-            objid = lut[:,0]==zobjid
-            print(np.sum(objid))
+            objid = np.random.randint(114243)
+
+            #zobjid = pz[np.random.randint(0,numObj),0]
+            #objid = lut[:,0]==zobjid
+            #print(np.sum(objid))
             
             samplej = jdat[objid,:,:]
             samplek = kdat[objid,:,:]
-            samplejyear = np.delete(jydat[objid,:,:],(1),axis=0)
+            samplejyear = np.delete(jydat[objid,:,:],1,axis=0)
             samplekyear = kydat[objid,:,:]
 
             snjy,snky, bgjy,bgky = generate_time_series(samplej,samplek,redshifts[i],peakmonth[j],-21)
@@ -260,13 +266,16 @@ for i in range(zsize):
                 r,s = peaktest(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])
                 balSNresultarr[i,j]    += s
                 peakSNresultarr[i,j]   += r
+                adjSNresultarr[i,j]    += adjacencytest(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])
                 wstremSNresultarr[i,j] += wstestremove(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])
+                
 
             if wstest(bgjyy,bgkyy,samplejyear[:,2],samplekyear[:,2])==1:
                 wstBGresultarr[i,j] += 1
                 r,s = peaktest(bgjyy,bgkyy,samplejyear[:,2],samplekyear[:,2])
                 peakBGresultarr[i,j] += r
                 balSNresultarr[i,j] += s
+                adjBGresultarr[i,j] += adjacencytest(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])
                 wstremBGresultarr[i,j] += wstestremove(bgjyy,bgkyy,samplejyear[:,2],samplekyear[:,2])
 
     print(i)
@@ -279,5 +288,7 @@ print("peak TPR= ",np.sum(peakSNresultarr)/(zsize*tsize*repeats))
 print("peak FPR= ",np.sum(peakBGresultarr)/(zsize*tsize*repeats))
 print("bal TPR= ",np.sum(balSNresultarr)/(zsize*tsize*repeats))
 print("bal FPR= ",np.sum(balBGresultarr)/(zsize*tsize*repeats))
+print("adj TPR= ",np.sum(adjSNresultarr)/(zsize*tsize*repeats))
+print("adj FPR= ",np.sum(adjBGresultarr)/(zsize*tsize*repeats))
 print("wstrem TPR= ",np.sum(wstremSNresultarr)/(zsize*tsize*repeats))
 print("wstrem FPR= ",np.sum(wstremBGresultarr)/(zsize*tsize*repeats))
