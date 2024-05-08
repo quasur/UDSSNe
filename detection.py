@@ -90,7 +90,7 @@ def adjacencytest(jdata,kdata,jerr,kerr):
 
 
 #wst but removing a single point
-def wstestremove(jdata,jerr,kdata,kerr):
+def wstestremove(jdata,kdata,jerr,kerr):
     size = np.size(jdata)
     wst = np.zeros(size)
     for i in range(size):
@@ -98,7 +98,7 @@ def wstestremove(jdata,jerr,kdata,kerr):
         currk = np.delete(kdata,i)
         currjerr = np.delete(jerr,i)
         currkerr = np.delete(kerr,i)
-        wst[i]=wstest(currj,currjerr,currk,currkerr)
+        wst[i]=wstest(currj,currk,currjerr,currkerr)
     #plt.plot(wst)
     if np.sum(wst<0.7)==1 and np.std(wst)>1: 
         r = 1
@@ -170,8 +170,8 @@ def lightcurve(id):
     ax[1].set_xlim(-2,87)
 
     #mean month line
-    ax[0].plot(jydat[id,:,0],np.ones(7)*np.mean(jdat[id,:,1]),'g-')
-    ax[1].plot(kydat[id,:,0],np.ones(7)*np.mean(kdat[id,:,1]),'g-')
+    ax[0].plot(jydat[id,:,0],np.ones(7)*np.mean(jydat[id,:,1]),'g-')
+    ax[1].plot(kydat[id,:,0],np.ones(7)*np.mean(kydat[id,:,1]),'g-')
 
 #%%
 #peak value dector combined with wst to return variable objects with single peaks
@@ -194,7 +194,7 @@ for i in range(114243):
             wststd=np.append(wststd,std)
         if  np.sum(counts[:-1]-countprev[:-1])>0:
             counts[4] += 1
-        if counts[2]-countprev[2] ==1:
+        if counts[3]-countprev[3] ==1:
             lightcurve(i)
             plt.show()
             print(int(lut[i,0]))
@@ -207,7 +207,7 @@ print(counts)
 peakTestSN = np.array([148305, 145425, 117014, 97639, 62253, 13145, 66612, 24605, 219616, 214136, 292377, 202060, 153802, 147703])
 balanceTestSN = np.array([148305, 145425, 62253])
 adjTestSN = np.array([148305, 117014, 62253, 13145, 147703, 66612, 24065, 154039, 202060, 153802])
-wstRemoveSn = np.array([62253, 13145, 147703, 66612, 219616, 252582, 202060, 153802])
+wstRemoveSn = np.array([104987,62253,13145,147703,66612,292377,217727,202060,153802])#([62253, 13145, 147703, 66612, 219616, 252582, 202060, 153802])
 
 
 SNShortlist = np.array([148305, 117014, 62253, 13145, 66612, 24605, 219616, 202060, 153802, 147703, 214136, 292377, 252582, 154039])
@@ -233,7 +233,10 @@ for id in range(np.size(kpeakObjs[:,0,0])):
 """
 
 #%% known object
-i = 95788
+#i = 95788 #found sn
+#i = 40030
+i = np.where(lut==194551)[0][0]
+wstestremove(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
 #r,wst = wstestremove(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
 
 lightcurve(i)
