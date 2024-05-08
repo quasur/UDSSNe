@@ -182,7 +182,7 @@ wststd = np.array([])
 for i in range(114243):
     #if object is variable
     countprev = counts.copy()
-    if wstest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])>0.7:
+    if wstest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])>-1000:
         #test each point to:
         r,s =peaktest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
         counts[0] += r
@@ -209,13 +209,20 @@ balanceTestSN = np.array([148305, 145425, 62253])
 adjTestSN = np.array([148305, 117014, 62253, 13145, 147703, 66612, 24065, 154039, 202060, 153802])
 wstRemoveSn = np.array([104987,62253,13145,147703,66612,292377,217727,202060,153802])#([62253, 13145, 147703, 66612, 219616, 252582, 202060, 153802])
 
+#153802 111791 62253 104987 147703
 
-SNShortlist = np.array([148305, 117014, 62253, 13145, 66612, 24605, 219616, 202060, 153802, 147703, 214136, 292377, 252582, 154039])
-SNXrayDet   = np.array([True  , True  , False, False, False, False, False , True  , False , False , False , False , False , False ])
+#                                                             
+#                                                             weird                              
+#            Certainty?:   0      0       1      0     0.5     0     0       0        1      1        1       0.2     ?       0       1       1       1   
+SNShortlist = np.array([148305, 117014, 62253, 13145, 66612, 24605, 219616, 202060, 153802, 147703, 214136, 292377, 252582, 154039, 104987, 111791, 210486 ])
+SNXrayDet   = np.array([True  , True  , False, False, False, False, False , True  , False , False , False , False , False , False , False , False , False ])
+SNpz        = np.array([               1.5156,0.7362,1.0109,1.9400,0.9457         , 2.7708, 1.5895, 1.4412, 1.2946, 0.9206, 3.0199, 0.2993, 0.1444, 2.3681])
 arrSN = SNShortlist.copy()
 
+SNconfident = SNShortlist[SNXrayDet]
+
 for i in range(np.size(SNShortlist)):
-    if SNXrayDet[i] == False:
+    if SNXrayDet[i] == True:
         print(SNShortlist[i])
         print(SNXrayDet[i])
 
@@ -301,18 +308,16 @@ plt.errorbar(jydat[0,:,0],tot,toterr)
 
 superColour = np.loadtxt("data/superColour.npy")
 
-print(np.where(superColour[:,0]==lut[:,0])[0])
+#print(np.where(superColour[:,0]==lut[:,0])[0])
 
 
 
 #convert agn dr11s to array indexes
-SCarr = foundSN.copy()
+SCarr = SNconfident.copy()
 for i in range(np.size(SCarr)):
-    SCarr[i]=np.where(foundSN[i]==superColour[:,0])[0].astype(int)
+    SCarr[i]=np.where(SNconfident[i]==superColour[:,0])[0].astype(int)
 
 for i in SCarr:
-    print(superColour[i,:])
+    print(superColour[i,:].astype(int))
 
-#2,2,2,1 = 3xSF, 1xpassive, 14x undef
-
-
+#8xSF (2) 1xpassive (1), 2xundef (neg)

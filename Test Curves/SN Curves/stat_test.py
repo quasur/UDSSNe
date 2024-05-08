@@ -65,44 +65,6 @@ def generate_time_series(jdata,kdata,z, peak_semester, magnitude):
 
 
 
-#Define tests
-#welch stetson test
-def wstest(jdata,kdata,jerr,kerr):
-    size = len(jdata)
-    kdelta = (kdata-np.sum(kdata*kerr**-2)/np.sum(kerr**-2))/kerr
-    jdelta = (jdata-np.sum(jdata*jerr**-2)/np.sum(jerr**-2))/jerr
-    index = (1/np.sqrt(size*(size-1)))*np.sum(kdelta*jdelta)
-    r=0
-    if index > 0.7:
-        r = 1
-    return r 
-
-
-
-#returns peak test and balance test results
-def peaktest(jdata,kdata,jerr,kerr):
-    javg = np.mean(jdata)
-    kavg = np.mean(kdata)
-    
-    #deviation from mean in num of error bars
-    jpeaks = (jdata-javg)/jerr
-    kpeaks = (kdata-kavg)/kerr
-
-    #jdeviations = np.abs(jpeaks)
-    #kdeviations = np.abs(kpeaks)
-
-    #if both j and k bands have a point with >4 deviations from mean then test is positive
-    if np.sum(jpeaks>4)==1 and np.sum(kpeaks>4)==1:
-        r=1
-    else: r=0
-
-    #if total error is greater below mean than above then test is positive. 
-    if np.sum(jpeaks)<0.0 and np.sum(kpeaks)<0.0:
-        s=1
-    else:s=0
-
-    return r,s
-
 #import data
 kdat = np.loadtxt("../../data/kdata.npy").reshape((114243,38,3))
 jdat = np.loadtxt("../../data/jdata.npy").reshape((114243,35,3))
@@ -128,16 +90,14 @@ id=95778
 snjy,snky,bgjy,bgky = generate_time_series(jydat[id,:,:],kydat[id,:,:],1,25,-21)
 
 
+
 #Define tests
 def wstest(jdata,kdata,jerr,kerr):
     size = len(jdata)
     kdelta = (kdata-np.sum(kdata*kerr**-2)/np.sum(kerr**-2))/kerr
     jdelta = (jdata-np.sum(jdata*jerr**-2)/np.sum(jerr**-2))/jerr
     index = (1/np.sqrt(size*(size-1)))*np.sum(kdelta*jdelta)
-    r=0
-    if index > 0.7:
-        r = 1
-    return r 
+    return index
 
 
 #returns the number of stds a point is from the mean
@@ -154,13 +114,13 @@ def peaktest(jdata,kdata,jerr,kerr):
 
     #if both j and k bands have a point with >4 deviations from mean then test is positive
     if np.sum(jpeaks>4)==1 and np.sum(kpeaks>4)==1:
-        r=1
-    else: r=0
+        r=True
+    else: r=False
 
     #if total error is greater below mean than above then test is positive. 
     if np.sum(jpeaks)<-1 and np.sum(kpeaks)<-1:
-        s=1
-    else:s=0
+        s=True
+    else:s=False
 
     return r,s
 
@@ -200,8 +160,8 @@ def wstestremove(jdata,jerr,kdata,kerr):
         currjerr = np.delete(jerr,i)
         currkerr = np.delete(kerr,i)
         wst[i]=wstest(currj,currjerr,currk,currkerr)
-
-    if np.sum(wst<1)==1: 
+    #plt.plot(wst)
+    if np.sum(wst<0.7)==1 and np.std(wst)>1: 
         r = 1
     else: r=0
     return r
@@ -261,7 +221,7 @@ for i in range(zsize):
             snjy,snky, bgjy,bgky = generate_time_series(samplej,samplek,redshifts[i],peakmonth[j],-21)
             snjyy,snkyy, bgjyy,bgkyy = generate_time_series(samplejyear,samplekyear,redshifts[i],peakmonth[j],-21)
 
-            if wstest(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])==1:
+            if wstest(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])>0.7:
                 wstSNresultarr[i,j] += 1
                 r,s = peaktest(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])
                 balSNresultarr[i,j]    += s
@@ -270,7 +230,7 @@ for i in range(zsize):
                 wstremSNresultarr[i,j] += wstestremove(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])
                 
 
-            if wstest(bgjyy,bgkyy,samplejyear[:,2],samplekyear[:,2])==1:
+            if wstest(bgjyy,bgkyy,samplejyear[:,2],samplekyear[:,2])>0.7:
                 wstBGresultarr[i,j] += 1
                 r,s = peaktest(bgjyy,bgkyy,samplejyear[:,2],samplekyear[:,2])
                 peakBGresultarr[i,j] += r
