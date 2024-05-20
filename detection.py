@@ -100,7 +100,30 @@ def wstestremove(jdata,kdata,jerr,kerr):
         currkerr = np.delete(kerr,i)
         wst[i]=wstest(currj,currk,currjerr,currkerr)
     #plt.plot(wst)
-    if np.sum(wst<0.7)==1 and np.std(wst)>1: 
+    if np.sum(wst<0.85)==1 and np.std(wst)>1: 
+        r = 1
+    else: r=0
+    return r, np.std(wst)
+
+
+
+#wst but removing a single point
+def wstestremoveplot(jdata,kdata,jerr,kerr):
+    size = np.size(jdata)
+    wst = np.zeros(size)
+    for i in range(size):
+        currj = np.delete(jdata,i)
+        currk = np.delete(kdata,i)
+        currjerr = np.delete(jerr,i)
+        currkerr = np.delete(kerr,i)
+        wst[i]=wstest(currj,currk,currjerr,currkerr)
+    
+    plt.figure(figsize=(6,3),dpi=400)
+    plt.plot(wst,linestyle="--",lw=1,marker=".",markersize=6,color="blue")
+    plt.xlabel("Point removed")
+    plt.ylabel("WST index")
+    
+    if np.sum(wst<0.85)==1 and np.std(wst)>1: 
         r = 1
     else: r=0
     return r, np.std(wst)
@@ -159,8 +182,8 @@ def lightcurve(id):
     ax[1].errorbar(kydat[id,:,0],kydat[id,:,1],yerr=kydat[id,:,2],color="blue",marker="x",lw=0,elinewidth=1,capsize=1.5)
         
     #titles
-    ax[0].set(ylabel="J")
-    ax[1].set(ylabel="K")
+    ax[0].set(ylabel="J Flux")
+    ax[1].set(ylabel="K Flux")
     ax[1].set(xlabel="Month")
     ax[0].xaxis.set_visible(False)
     fig.suptitle(("DR11= %i" %(int(lut[id,0]))))
@@ -170,8 +193,8 @@ def lightcurve(id):
     ax[1].set_xlim(-2,87)
 
     #mean month line
-    ax[0].plot(jydat[id,:,0],np.ones(7)*np.mean(jydat[id,:,1]),'g-')
-    ax[1].plot(kydat[id,:,0],np.ones(7)*np.mean(kydat[id,:,1]),'g-')
+    #ax[0].plot(jydat[id,:,0],np.ones(7)*np.mean(jydat[id,:,1]),'g-')
+    #ax[1].plot(kydat[id,:,0],np.ones(7)*np.mean(kydat[id,:,1]),'g-')
 
 #%%
 #peak value dector combined with wst to return variable objects with single peaks
@@ -179,14 +202,17 @@ def lightcurve(id):
 #0 = peaktest, 1 = balance test, 
 counts=np.zeros((5))#sn/agn count
 wststd = np.array([])
-for i in range(114243):
+j=0
+#print(SCid)
+for i in SCid.astype(int):#range(114243):#
     #if object is variable
+    #i=np.where(lut[:,0]==210486)[0][0]
     countprev = counts.copy()
-    if wstest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])>-1000:
+    if wstest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])>0.85:
         #test each point to:
         r,s =peaktest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
         counts[0] += r
-        counts[1] += s
+        counts[1] += 0
         counts[2] += adjacencytest(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
         t, std = wstestremove(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
         counts[3]+=t
@@ -194,7 +220,8 @@ for i in range(114243):
             wststd=np.append(wststd,std)
         if  np.sum(counts[:-1]-countprev[:-1])>0:
             counts[4] += 1
-        if counts[3]-countprev[3] ==1:
+        if np.sum(counts[3]-countprev[3])>0:
+            j+=1
             lightcurve(i)
             plt.show()
             print(int(lut[i,0]))
@@ -204,10 +231,10 @@ print(counts)
 
 #%%
 #SN shortlist
-peakTestSN = np.array([148305, 145425, 117014, 97639, 62253, 13145, 66612, 24605, 219616, 214136, 292377, 202060, 153802, 147703])
+peakTestSN = np.array([148305, 145425, 117014, 97639, 62253, 13145, 66612, 24605, 219616, 214136, 292377, 202060, 153802, 147703,210486])
 balanceTestSN = np.array([148305, 145425, 62253])
-adjTestSN = np.array([148305, 117014, 62253, 13145, 147703, 66612, 24065, 154039, 202060, 153802])
-wstRemoveSn = np.array([104987,62253,13145,147703,66612,292377,217727,202060,153802])#([62253, 13145, 147703, 66612, 219616, 252582, 202060, 153802])
+adjTestSN = np.array([148305, 117014, 62253, 13145, 147703, 66612, 24065, 154039, 202060, 153802,210486])
+wstRemoveSn = np.array([104987,62253,13145,147703,66612,292377,217727,202060,153802,210486])#([62253, 13145, 147703, 66612, 219616, 252582, 202060, 153802])
 
 #153802 111791 62253 104987 147703
 
@@ -216,10 +243,12 @@ wstRemoveSn = np.array([104987,62253,13145,147703,66612,292377,217727,202060,153
 #            Certainty?:   0      0       1      0     0.5     0     0       0        1      1        1       0.2     ?       0       1       1       1   
 SNShortlist = np.array([148305, 117014, 62253, 13145, 66612, 24605, 219616, 202060, 153802, 147703, 214136, 292377, 252582, 154039, 104987, 111791, 210486 ])
 SNXrayDet   = np.array([True  , True  , False, False, False, False, False , True  , False , False , False , False , False , False , False , False , False ])
-SNpz        = np.array([               1.5156,0.7362,1.0109,1.9400,0.9457         , 2.7708, 1.5895, 1.4412, 1.2946, 0.9206, 3.0199, 0.2993, 0.1444, 2.3681])
+SNpz        = np.array([               1.5156,0.7362,1.0109,1.9400,0.9457         , 2.7708, 1.5895, 1.5895, 1.2946, 0.9206, 3.0199, 0.2993, 0.1444, 2.3681])
 arrSN = SNShortlist.copy()
 
-SNconfident = SNShortlist[SNXrayDet]
+SNconfident = np.array([[62253,153802,147703,214136,104987,111791,210486],
+                       [1.5156,2.7708,1.5895,1.5895,0.2993,0.1444,2.3681],
+                       [-22.4 ,-22.9 ,-22.9 ,-22.1 ,-18.1 ,-17.3 ,-23]])
 
 for i in range(np.size(SNShortlist)):
     if SNXrayDet[i] == True:
@@ -242,9 +271,10 @@ for id in range(np.size(kpeakObjs[:,0,0])):
 #%% known object
 #i = 95788 #found sn
 #i = 40030
-i = np.where(lut==194551)[0][0]
-wstestremove(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
-#r,wst = wstestremove(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
+i = np.where(lut==62253)[0][0]
+r,wst = wstestremoveplot(jydat[i,:,1],kydat[i,:,1],jydat[i,:,2],kydat[i,:,2])
+plt.show()
+
 
 lightcurve(i)
 #lightcurve2(i)
@@ -311,13 +341,17 @@ superColour = np.loadtxt("data/superColour.npy")
 #print(np.where(superColour[:,0]==lut[:,0])[0])
 
 
+#convert agn dr11s to array indexes
+SCid = SNconfident[0,:].copy()
+for i in range(np.size(SCid)):
+    SCid[i]=np.where(SNconfident[0,i]==lut[:,0])[0][0].astype(int)
 
 #convert agn dr11s to array indexes
-SCarr = SNconfident.copy()
+SCarr = SNconfident[0,:].copy()
 for i in range(np.size(SCarr)):
-    SCarr[i]=np.where(SNconfident[i]==superColour[:,0])[0].astype(int)
-
+    SCarr[i]=np.where(SNconfident[0,i]==superColour[:,0])[0][0].astype(int)
+print(SCarr)
 for i in SCarr:
-    print(superColour[i,:].astype(int))
+    print((superColour[int(i),:]).astype(int))
 
-#8xSF (2) 1xpassive (1), 2xundef (neg)
+#5xSF (2) 1xpassive (1), 2xundef (neg)

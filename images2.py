@@ -67,27 +67,7 @@ for j, oid in enumerate(object_ids):
     x_bounds = (int(x - frame_size), int(x + frame_size))
     y_bounds = (int(y - frame_size), int(y + frame_size))
 
-    ax = np.array([])
-    ax = np.append(ax, plt.subplot2grid((3, 8), (0, 0), rowspan=1, colspan=8))
-    ax = np.append(ax, plt.subplot2grid((3, 8), (1, 0), rowspan=1, colspan=8))
-    ax = np.append(ax, plt.subplot2grid((3, 8), (2, 0), rowspan=1, colspan=1))
-    ax = np.append(ax, plt.subplot2grid((3, 8), (2, 2), rowspan=1, colspan=1))
-    ax = np.append(ax, plt.subplot2grid((3, 8), (2, 3), rowspan=1, colspan=1))
-    ax = np.append(ax, plt.subplot2grid((3, 8), (2, 4), rowspan=1, colspan=1))
-    ax = np.append(ax, plt.subplot2grid((3, 8), (2, 5), rowspan=1, colspan=1))
-    ax = np.append(ax, plt.subplot2grid((3, 8), (2, 6), rowspan=1, colspan=1))
-    ax = np.append(ax, plt.subplot2grid((3, 8), (2, 7), rowspan=1, colspan=1))
 
-    for i in range(ax.size-2):
-        ax[i+2].axis('off')
-
-    # Plot curves
-    ax[0].errorbar(k_x, k_y, yerr=k_y_err, fmt='o', c="green", label="K-band")
-    ax[1].errorbar(j_x, j_y, yerr=j_y_err, fmt='o', c="blue", label="J-band")
-    #ax[0].text(0.01, 1.07, f"DR11 ID: {int(oid)}", ha='left', va='top', transform=ax[0].transAxes)
-    ax[0].set_title(f"DR11 ID: {int(oid)}")
-    ax[0].legend()
-    ax[1].legend()
 
     # Import images
     directory = "data/images"
@@ -115,36 +95,16 @@ for j, oid in enumerate(object_ids):
     counts = np.zeros(data.shape[0])
     for i in range(data.shape[0]):
 
-        ax[i + 2].imshow(data[i])
+        plt.imshow(data[i])
+        plt.show()
+        #ax[i + 2].imshow(data[i])
         #ax[i + 1].contour(data[i], 2, cmap="plasma")
         x_dist = np.sum(data[i], axis=0)
         y_dist = np.sum(data[i], axis=1)
 
-        counts[i] = np.count_nonzero(data[i] > data[i].max()/1.5)
 
-        mean = mean_(vals, x_dist)
-        std = std_(vals, x_dist)
-        #print(f"x mean: {mean}, x standard_deviation: {std}")
+    print(oid)
 
-        #print(ks_x)
-
-        # plt.figure()
-        # ax1 = plt.subplot2grid((4, 4), (1, 0), colspan=3, rowspan=3)
-        # ax1.pcolormesh(data[i])
-        # ax1.contour(data[i], 3, cmap="plasma")
-        #
-        # ax2 = plt.subplot2grid((4, 4), (1, 3), rowspan=3, sharey=ax1)
-        # ax2.plot(y_dist, range(len(y_dist)))
-        # ax2.axis('on')
-        #
-        # ax3 = plt.subplot2grid((4, 4), (0, 0), colspan=3, sharex=ax1)
-        # ax3.plot(range(len(x_dist)), x_dist)
-        # #ax3.hist(np.random.normal(mean, std, 60000), bins=2*frame_size)
-        # ax3.axis('on')
-        #
-        # plt.subplots_adjust(wspace=0, hspace=0)
-    plt.subplots_adjust(wspace=0, hspace=0)
-    plt.show()
 
 
     # counts_outside_2sigma = abs(counts-np.mean(counts)) > 2*np.std(counts)

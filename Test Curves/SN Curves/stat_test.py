@@ -7,6 +7,7 @@ import luminosity_distance
 #it will generate a background and supernova curve based on the parameters specified (z, month, mag)
 #
 
+np.random.seed(100)
 
 def generate_template(z, peak_semester):
     template_xdata = np.loadtxt("template_xdata.txt")
@@ -29,8 +30,8 @@ def generate_template(z, peak_semester):
 def generate_background_from_data(jy,ky,jyerr,kyerr):
 
     #generate empty 
-    jy = jy*0 +  np.mean(jy)
-    ky = ky*0 +  np.mean(ky)
+    jy = jy*0 #+ np.mean(jy)
+    ky = ky*0 #+ np.mean(ky)
     #generate a new point based on the error of current point
     for i,val in enumerate(jyerr):
         jy[i] += np.random.normal(0, val)
@@ -57,9 +58,14 @@ def generate_time_series(jdata,kdata,z, peak_semester, magnitude):
 
     # Get the x and y arrays for the template, given a peak_semester and redshift
     dummy_curve_x, dummy_curve_y = generate_template(z, peak_semester)
+
+
+    plt.plot(dummy_curve_x,dummy_curve_y*sn_flux_j,'b-')
+    plt.plot(dummy_curve_x,dummy_curve_y*sn_flux_k,'r-')
+    plt.show()
     
-    snjy = bgjy + np.interp(jdata[:,0], dummy_curve_x, dummy_curve_y * sn_flux_j)
-    snky = bgky + np.interp(kdata[:,0], dummy_curve_x, dummy_curve_y * sn_flux_k)
+    snjy = np.interp(jdata[:,0], dummy_curve_x, dummy_curve_y * sn_flux_j) +bgjy
+    snky = np.interp(kdata[:,0], dummy_curve_x, dummy_curve_y * sn_flux_k) + bgky
     
     return snjy,snky,bgjy,bgky
 
@@ -166,13 +172,16 @@ def wstestremove(jdata,jerr,kdata,kerr):
     else: r=0
     return r
 
+
+
 #parameters and var setup
 stop = kdat[0,-1,0]
-zsize=20
-tsize=20
-redshifts = np.linspace(0.1,2.5,zsize)
-peakmonth = np.linspace(0,stop,tsize)
-repeats = 50
+zsize=1#20
+tsize=1#20
+redshifts = np.linspace(1.5,2.5,zsize)
+peakmonth = np.linspace(60,stop,tsize)
+repeats = 1#50
+
 
 wstSNresultarr = np.zeros((zsize,tsize))
 wstBGresultarr = np.zeros((zsize,tsize))
@@ -188,6 +197,7 @@ adjBGresultarr = np.zeros((zsize,tsize))
 
 wstremSNresultarr = np.zeros((zsize,tsize))
 wstremBGresultarr = np.zeros((zsize,tsize))
+
 
 #test testing over a range of parameters
 #currently using a 
@@ -207,7 +217,8 @@ for i in range(zsize):
         blockcount = 0
         for k in range(repeats):
             
-            objid = np.random.randint(114243)
+            objid = 18579#np.random.randint(114243)
+
 
             #zobjid = pz[np.random.randint(0,numObj),0]
             #objid = lut[:,0]==zobjid
@@ -218,8 +229,37 @@ for i in range(zsize):
             samplejyear = np.delete(jydat[objid,:,:],1,axis=0)
             samplekyear = kydat[objid,:,:]
 
-            snjy,snky, bgjy,bgky = generate_time_series(samplej,samplek,redshifts[i],peakmonth[j],-21)
-            snjyy,snkyy, bgjyy,bgkyy = generate_time_series(samplejyear,samplekyear,redshifts[i],peakmonth[j],-21)
+            snjy,snky, bgjy,bgky = generate_time_series(samplej,samplek,redshifts[i],peakmonth[j],-22)
+            snjyy,snkyy, bgjyy,bgkyy = generate_time_series(samplejyear,samplekyear,redshifts[i],peakmonth[j],-22)
+
+            def lightcurve(id):
+                
+                fig,ax = plt.subplots(2)
+                plt.subplots_adjust(left=0.1,right=0.95,bottom=0.1,top=0.94,hspace=0)
+                
+                ax[0].plot(samplejyear[:,0],snjyy,'b-')
+                ax[1].plot(samplekyear[:,0],snkyy,'b-')
+                
+                #error bars
+                ax[0].errorbar(samplej[:,0]    , snjy , yerr=samplej[:,2]    , color="red" , marker="x", markersize =4,lw=0,elinewidth=0.5,capsize=0)
+                ax[0].errorbar(samplejyear[:,0], snjyy, yerr=samplekyear[:,2], color="blue", marker="x", lw=0,elinewidth=1,capsize=1.5)
+                ax[1].errorbar(samplek[:,0]    , snky , yerr=samplek[:,2]    , color="red" , marker="x", markersize=4,lw=0,elinewidth=0.5,capsize=0)
+                ax[1].errorbar(samplekyear[:,0], snkyy, yerr=samplekyear[:,2], color="blue", marker="x", lw=0,elinewidth=1,capsize=1.5)
+                    
+                #titles
+                ax[0].set(ylabel="J")
+                ax[1].set(ylabel="K")
+                ax[1].set(xlabel="Month")
+                ax[0].xaxis.set_visible(False)
+                
+                #scale timeline
+                ax[0].set_xlim(-2,87)
+                ax[1].set_xlim(-2,87)
+
+
+            lightcurve(objid)
+            plt.show()
+
 
             if wstest(snjyy,snkyy,samplejyear[:,2],samplekyear[:,2])>0.7:
                 wstSNresultarr[i,j] += 1
